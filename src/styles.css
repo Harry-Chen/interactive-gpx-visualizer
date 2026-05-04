@@ -1,6 +1,7 @@
 :root {
-  color: #17211f;
-  background: #eef2ef;
+  --page-bg: #eef2ef;
+  --mobile-bg: #dfe7e2;
+  --map-bg: #c7dde5;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
@@ -11,10 +12,137 @@
   --ink: #17211f;
   --muted: #64706c;
   --line: rgba(25, 42, 38, 0.16);
+  --line-soft: rgba(25, 42, 38, 0.1);
+  --control-border: rgba(25, 42, 38, 0.13);
+  --control-bg: rgba(255, 255, 255, 0.72);
+  --control-strong-bg: rgba(255, 255, 255, 0.82);
+  --control-hover-bg: rgba(239, 249, 246, 0.92);
+  --active-bg: #e5f4ef;
+  --card-bg: rgba(255, 255, 255, 0.58);
+  --card-soft-bg: rgba(255, 255, 255, 0.56);
+  --row-bg: rgba(255, 255, 255, 0.66);
+  --row-selected-bg: rgba(239, 249, 246, 0.9);
+  --upload-bg: rgba(232, 244, 240, 0.78);
+  --upload-border: rgba(22, 107, 97, 0.45);
+  --drop-bg: rgba(239, 249, 246, 0.86);
   --accent: #1d9a8a;
   --accent-dark: #166b61;
+  --accent-border: rgba(29, 154, 138, 0.5);
+  --accent-soft-border: rgba(29, 154, 138, 0.46);
+  --accent-strong-border: rgba(29, 154, 138, 0.62);
+  --accent-selection: rgba(29, 154, 138, 0.16);
   --danger: #b42337;
+  --danger-bg: rgba(255, 241, 242, 0.86);
+  --danger-border: rgba(180, 35, 55, 0.22);
+  --disabled: rgba(100, 112, 108, 0.58);
   --shadow: 0 22px 70px rgba(15, 23, 42, 0.18);
+  --toolbar-shadow: 0 14px 42px rgba(15, 23, 42, 0.12);
+  --brand-shadow: 0 14px 42px rgba(15, 23, 42, 0.13);
+  --modal-shadow: 0 26px 80px rgba(15, 23, 42, 0.28);
+  --modal-backdrop: rgba(12, 18, 16, 0.34);
+  --tooltip-bg: rgba(250, 251, 247, 0.96);
+  --chart-grid: #d7dedb;
+  --chart-crosshair: #101820;
+  --chart-active-dot: #ffffff;
+  --resize-handle: rgba(25, 42, 38, 0.26);
+  --track-dot-ring: rgba(0, 0, 0, 0.12);
+  color: var(--ink);
+  color-scheme: light;
+  background: var(--page-bg);
+}
+
+html[data-theme="dark"] {
+  --page-bg: #0f1513;
+  --mobile-bg: #111a17;
+  --map-bg: #0d1718;
+  --panel: rgba(18, 25, 23, 0.92);
+  --panel-solid: #151d1a;
+  --ink: #edf5f1;
+  --muted: #a5b2ad;
+  --line: rgba(213, 232, 224, 0.16);
+  --line-soft: rgba(213, 232, 224, 0.1);
+  --control-border: rgba(213, 232, 224, 0.16);
+  --control-bg: rgba(32, 43, 39, 0.76);
+  --control-strong-bg: rgba(39, 53, 48, 0.9);
+  --control-hover-bg: rgba(31, 68, 61, 0.9);
+  --active-bg: rgba(29, 154, 138, 0.2);
+  --card-bg: rgba(30, 41, 37, 0.72);
+  --card-soft-bg: rgba(30, 41, 37, 0.68);
+  --row-bg: rgba(26, 35, 32, 0.7);
+  --row-selected-bg: rgba(28, 78, 69, 0.74);
+  --upload-bg: rgba(24, 66, 59, 0.72);
+  --upload-border: rgba(96, 232, 211, 0.4);
+  --drop-bg: rgba(24, 67, 59, 0.86);
+  --accent: #35d0bc;
+  --accent-dark: #61ead5;
+  --accent-border: rgba(74, 221, 203, 0.48);
+  --accent-soft-border: rgba(74, 221, 203, 0.44);
+  --accent-strong-border: rgba(74, 221, 203, 0.62);
+  --accent-selection: rgba(74, 221, 203, 0.16);
+  --danger: #fb7185;
+  --danger-bg: rgba(88, 22, 37, 0.82);
+  --danger-border: rgba(251, 113, 133, 0.34);
+  --disabled: rgba(165, 178, 173, 0.52);
+  --shadow: 0 22px 70px rgba(0, 0, 0, 0.38);
+  --toolbar-shadow: 0 14px 42px rgba(0, 0, 0, 0.28);
+  --brand-shadow: 0 14px 42px rgba(0, 0, 0, 0.3);
+  --modal-shadow: 0 26px 80px rgba(0, 0, 0, 0.5);
+  --modal-backdrop: rgba(0, 0, 0, 0.52);
+  --tooltip-bg: rgba(22, 31, 28, 0.96);
+  --chart-grid: #2d3c38;
+  --chart-crosshair: #e6f6f1;
+  --chart-active-dot: #151d1a;
+  --resize-handle: rgba(213, 232, 224, 0.28);
+  --track-dot-ring: rgba(255, 255, 255, 0.22);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="system"] {
+    --page-bg: #0f1513;
+    --mobile-bg: #111a17;
+    --map-bg: #0d1718;
+    --panel: rgba(18, 25, 23, 0.92);
+    --panel-solid: #151d1a;
+    --ink: #edf5f1;
+    --muted: #a5b2ad;
+    --line: rgba(213, 232, 224, 0.16);
+    --line-soft: rgba(213, 232, 224, 0.1);
+    --control-border: rgba(213, 232, 224, 0.16);
+    --control-bg: rgba(32, 43, 39, 0.76);
+    --control-strong-bg: rgba(39, 53, 48, 0.9);
+    --control-hover-bg: rgba(31, 68, 61, 0.9);
+    --active-bg: rgba(29, 154, 138, 0.2);
+    --card-bg: rgba(30, 41, 37, 0.72);
+    --card-soft-bg: rgba(30, 41, 37, 0.68);
+    --row-bg: rgba(26, 35, 32, 0.7);
+    --row-selected-bg: rgba(28, 78, 69, 0.74);
+    --upload-bg: rgba(24, 66, 59, 0.72);
+    --upload-border: rgba(96, 232, 211, 0.4);
+    --drop-bg: rgba(24, 67, 59, 0.86);
+    --accent: #35d0bc;
+    --accent-dark: #61ead5;
+    --accent-border: rgba(74, 221, 203, 0.48);
+    --accent-soft-border: rgba(74, 221, 203, 0.44);
+    --accent-strong-border: rgba(74, 221, 203, 0.62);
+    --accent-selection: rgba(74, 221, 203, 0.16);
+    --danger: #fb7185;
+    --danger-bg: rgba(88, 22, 37, 0.82);
+    --danger-border: rgba(251, 113, 133, 0.34);
+    --disabled: rgba(165, 178, 173, 0.52);
+    --shadow: 0 22px 70px rgba(0, 0, 0, 0.38);
+    --toolbar-shadow: 0 14px 42px rgba(0, 0, 0, 0.28);
+    --brand-shadow: 0 14px 42px rgba(0, 0, 0, 0.3);
+    --modal-shadow: 0 26px 80px rgba(0, 0, 0, 0.5);
+    --modal-backdrop: rgba(0, 0, 0, 0.52);
+    --tooltip-bg: rgba(22, 31, 28, 0.96);
+    --chart-grid: #2d3c38;
+    --chart-crosshair: #e6f6f1;
+    --chart-active-dot: #151d1a;
+    --resize-handle: rgba(213, 232, 224, 0.28);
+    --track-dot-ring: rgba(255, 255, 255, 0.22);
+    color-scheme: dark;
+  }
 }
 
 * {
@@ -31,6 +159,8 @@ body,
 
 body {
   overflow: hidden;
+  color: var(--ink);
+  background: var(--page-bg);
 }
 
 button,
@@ -57,7 +187,7 @@ button {
 .map-shell {
   position: absolute;
   inset: 0;
-  background: #c7dde5;
+  background: var(--map-bg);
 }
 
 .map-container {
@@ -67,6 +197,45 @@ button {
 
 .maplibregl-map {
   font-family: inherit;
+}
+
+.maplibregl-ctrl-group {
+  overflow: hidden;
+  border: 1px solid var(--control-border);
+  background: var(--panel);
+  box-shadow: var(--toolbar-shadow);
+}
+
+.maplibregl-ctrl-group button {
+  background-color: var(--control-bg);
+}
+
+.maplibregl-ctrl-group button:hover {
+  background-color: var(--control-hover-bg);
+}
+
+.maplibregl-ctrl-group button span {
+  filter: var(--maplibre-control-filter, none);
+}
+
+html[data-theme="dark"] {
+  --maplibre-control-filter: invert(1) hue-rotate(180deg);
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="system"] {
+    --maplibre-control-filter: invert(1) hue-rotate(180deg);
+  }
+}
+
+.maplibregl-ctrl-attrib {
+  border: 1px solid var(--control-border);
+  background: var(--panel);
+  color: var(--muted);
+}
+
+.maplibregl-ctrl-attrib a {
+  color: var(--accent-dark);
 }
 
 .brand-bar {
@@ -84,7 +253,7 @@ button {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
-  box-shadow: 0 14px 42px rgba(15, 23, 42, 0.13);
+  box-shadow: var(--brand-shadow);
   backdrop-filter: blur(18px);
 }
 
@@ -121,15 +290,15 @@ button {
   justify-content: center;
   padding: 0;
   cursor: pointer;
-  border: 1px solid rgba(25, 42, 38, 0.13);
+  border: 1px solid var(--control-border);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--control-bg);
   color: var(--accent-dark);
 }
 
 .about-button:hover {
-  border-color: rgba(29, 154, 138, 0.5);
-  background: rgba(239, 249, 246, 0.92);
+  border-color: var(--accent-border);
+  background: var(--control-hover-bg);
 }
 
 .track-panel {
@@ -158,9 +327,9 @@ button {
   gap: 10px;
   height: 46px;
   cursor: pointer;
-  border: 1px dashed rgba(22, 107, 97, 0.45);
+  border: 1px dashed var(--upload-border);
   border-radius: 8px;
-  background: rgba(232, 244, 240, 0.78);
+  background: var(--upload-bg);
   color: var(--accent-dark);
   font-weight: 750;
 }
@@ -184,7 +353,7 @@ button {
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.56);
+  background: var(--card-soft-bg);
 }
 
 .panel-summary strong,
@@ -209,9 +378,9 @@ button {
   max-height: min(180px, 22vh);
   overflow: auto;
   padding: 10px 12px;
-  border: 1px solid rgba(180, 35, 55, 0.22);
+  border: 1px solid var(--danger-border);
   border-radius: 8px;
-  background: rgba(255, 241, 242, 0.86);
+  background: var(--danger-bg);
   color: var(--danger);
   font-size: 0.8rem;
   line-height: 1.35;
@@ -241,9 +410,9 @@ button {
   gap: 10px;
   padding: 10px;
   cursor: pointer;
-  border: 1px solid rgba(25, 42, 38, 0.12);
+  border: 1px solid var(--line-soft);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.66);
+  background: var(--row-bg);
   transition:
     border-color 160ms ease,
     background 160ms ease,
@@ -252,8 +421,8 @@ button {
 
 .track-row:hover,
 .track-row.selected {
-  border-color: rgba(29, 154, 138, 0.46);
-  background: rgba(239, 249, 246, 0.9);
+  border-color: var(--accent-soft-border);
+  background: var(--row-selected-bg);
 }
 
 .track-row:hover {
@@ -280,7 +449,7 @@ button {
   height: 36px;
   flex: 0 0 auto;
   border-radius: 6px;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  box-shadow: inset 0 0 0 1px var(--track-dot-ring);
 }
 
 .track-copy {
@@ -337,9 +506,9 @@ button {
 .track-bulk-toolbar button,
 .track-sort-toolbar select {
   min-height: 30px;
-  border: 1px solid rgba(25, 42, 38, 0.13);
+  border: 1px solid var(--control-border);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--control-bg);
 }
 
 .track-bulk-toolbar button {
@@ -353,7 +522,7 @@ button {
 
 .track-bulk-toolbar button:disabled {
   cursor: not-allowed;
-  color: rgba(100, 112, 108, 0.58);
+  color: var(--disabled);
 }
 
 .track-sort-toolbar label {
@@ -384,9 +553,9 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(25, 42, 38, 0.13);
+  border: 1px solid var(--control-border);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--control-bg);
   cursor: pointer;
 }
 
@@ -400,7 +569,7 @@ button {
 .color-input-label:hover,
 .selection-toolbar button:hover,
 .filter-chip button:hover {
-  border-color: rgba(29, 154, 138, 0.5);
+  border-color: var(--accent-border);
   color: var(--accent-dark);
 }
 
@@ -443,13 +612,13 @@ button {
   gap: 8px;
   padding: 0 14px;
   background: var(--panel);
-  box-shadow: 0 14px 42px rgba(15, 23, 42, 0.12);
+  box-shadow: var(--toolbar-shadow);
   font-weight: 720;
 }
 
 .selection-toolbar button.active {
-  border-color: rgba(29, 154, 138, 0.62);
-  background: #e5f4ef;
+  border-color: var(--accent-strong-border);
+  background: var(--active-bg);
   color: var(--accent-dark);
 }
 
@@ -459,7 +628,7 @@ button {
   gap: 8px;
   padding: 0 12px;
   background: var(--panel);
-  box-shadow: 0 14px 42px rgba(15, 23, 42, 0.12);
+  box-shadow: var(--toolbar-shadow);
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 720;
@@ -468,9 +637,9 @@ button {
 .toolbar-field select {
   height: 30px;
   min-width: 132px;
-  border: 1px solid rgba(25, 42, 38, 0.16);
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.82);
+  background: var(--control-strong-bg);
   color: var(--ink);
   font-weight: 700;
 }
@@ -499,7 +668,7 @@ button {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
-  box-shadow: 0 14px 42px rgba(15, 23, 42, 0.12);
+  box-shadow: var(--toolbar-shadow);
   color: var(--accent-dark);
   font-weight: 700;
 }
@@ -556,7 +725,7 @@ button {
   content: "";
   transform: translateX(-50%);
   border-radius: 999px;
-  background: rgba(25, 42, 38, 0.26);
+  background: var(--resize-handle);
 }
 
 .metrics-panel.idle {
@@ -610,9 +779,9 @@ button {
 .stats-grid div {
   min-width: 0;
   padding: 9px 10px;
-  border: 1px solid rgba(25, 42, 38, 0.1);
+  border: 1px solid var(--line-soft);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.58);
+  background: var(--card-bg);
 }
 
 .stats-grid dt {
@@ -660,9 +829,9 @@ button {
   min-width: 0;
   min-height: 210px;
   padding: 10px 10px 4px;
-  border: 1px solid rgba(25, 42, 38, 0.1);
+  border: 1px solid var(--line-soft);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.58);
+  background: var(--card-bg);
 }
 
 .compact-chart {
@@ -692,11 +861,11 @@ button {
   display: grid;
   gap: 3px;
   padding: 8px 10px;
-  border: 1px solid rgba(25, 42, 38, 0.14);
+  border: 1px solid var(--control-border);
   border-radius: 8px;
-  background: rgba(250, 251, 247, 0.96);
+  background: var(--tooltip-bg);
   color: var(--ink);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+  box-shadow: var(--toolbar-shadow);
   font-size: 0.75rem;
 }
 
@@ -706,19 +875,26 @@ button {
 
 .track-hover-popup .maplibregl-popup-content {
   padding: 6px 9px;
-  border: 1px solid rgba(25, 42, 38, 0.16);
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(250, 251, 247, 0.96);
+  background: var(--tooltip-bg);
   color: var(--ink);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+  box-shadow: var(--toolbar-shadow);
   font: 700 0.78rem/1.2 inherit;
+}
+
+.track-hover-popup .maplibregl-popup-tip {
+  border-top-color: var(--tooltip-bg);
+  border-right-color: var(--tooltip-bg);
+  border-bottom-color: var(--tooltip-bg);
+  border-left-color: var(--tooltip-bg);
 }
 
 .drag-selection {
   position: absolute;
   z-index: 5;
   border: 2px solid var(--accent-dark);
-  background: rgba(29, 154, 138, 0.16);
+  background: var(--accent-selection);
   pointer-events: none;
 }
 
@@ -730,9 +906,9 @@ button {
   place-items: center;
   align-content: center;
   gap: 8px;
-  border: 2px dashed rgba(22, 107, 97, 0.72);
+  border: 2px dashed var(--upload-border);
   border-radius: 8px;
-  background: rgba(239, 249, 246, 0.86);
+  background: var(--drop-bg);
   color: var(--accent-dark);
   pointer-events: none;
   backdrop-filter: blur(10px);
@@ -764,7 +940,7 @@ button {
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(12, 18, 16, 0.34);
+  background: var(--modal-backdrop);
   backdrop-filter: blur(8px);
 }
 
@@ -773,10 +949,10 @@ button {
   max-height: min(700px, calc(100vh - 40px));
   overflow: auto;
   padding: 18px;
-  border: 1px solid rgba(25, 42, 38, 0.18);
+  border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel-solid);
-  box-shadow: 0 26px 80px rgba(15, 23, 42, 0.28);
+  box-shadow: var(--modal-shadow);
 }
 
 .about-dialog header {
@@ -807,9 +983,9 @@ button {
   min-height: 34px;
   padding: 0 12px;
   cursor: pointer;
-  border: 1px solid rgba(25, 42, 38, 0.13);
+  border: 1px solid var(--control-border);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--control-bg);
   color: var(--ink);
   font-weight: 720;
 }
@@ -849,9 +1025,9 @@ button {
   display: grid;
   margin-top: 10px;
   overflow: hidden;
-  border: 1px solid rgba(25, 42, 38, 0.12);
+  border: 1px solid var(--line-soft);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--card-bg);
 }
 
 .dependency-table div {
@@ -862,7 +1038,7 @@ button {
 }
 
 .dependency-table div + div {
-  border-top: 1px solid rgba(25, 42, 38, 0.09);
+  border-top: 1px solid var(--line-soft);
 }
 
 .dependency-table span {
@@ -885,7 +1061,7 @@ button {
   .app-shell {
     min-height: 100vh;
     overflow: visible;
-    background: #dfe7e2;
+    background: var(--mobile-bg);
   }
 
   .map-shell {

@@ -26,6 +26,12 @@ type ChartPoint = TrackPoint & {
   distanceKm: number;
 };
 
+const CHART_GRID_COLOR = "var(--chart-grid)";
+const CHART_LINE_COLOR = "var(--line)";
+const CHART_TICK_COLOR = "var(--muted)";
+const CHART_CROSSHAIR_COLOR = "var(--chart-crosshair)";
+const CHART_ACTIVE_DOT_COLOR = "var(--chart-active-dot)";
+
 export default function MetricsCharts({ track, availableMetrics, metricLabels, emptyText, onHoverPoint }: MetricsChartsProps) {
   const metricOrder = availableMetrics;
   const lastHoverKeyRef = useRef<string | null>(null);
@@ -74,16 +80,25 @@ export default function MetricsCharts({ track, availableMetrics, metricLabels, e
                 syncId="track-metrics"
                 onMouseMove={handleMouseMove}
               >
-              <CartesianGrid vertical={false} stroke="#d7dedb" />
+              <CartesianGrid vertical={false} stroke={CHART_GRID_COLOR} />
                 <XAxis
                   dataKey="distanceKm"
                   tickFormatter={(value) => `${value}km`}
                   minTickGap={28}
                   hide={key !== metricOrder.at(-1)}
+                  tick={{ fill: CHART_TICK_COLOR }}
+                  tickLine={{ stroke: CHART_LINE_COLOR }}
+                  axisLine={{ stroke: CHART_LINE_COLOR }}
                 />
-                <YAxis width={46} tickFormatter={(value) => formatAxis(value, key)} />
+                <YAxis
+                  width={46}
+                  tickFormatter={(value) => formatAxis(value, key)}
+                  tick={{ fill: CHART_TICK_COLOR }}
+                  tickLine={{ stroke: CHART_LINE_COLOR }}
+                  axisLine={{ stroke: CHART_LINE_COLOR }}
+                />
                 <Tooltip
-                  cursor={{ stroke: "#101820", strokeWidth: 1.5 }}
+                  cursor={{ stroke: CHART_CROSSHAIR_COLOR, strokeWidth: 1.5 }}
                   content={(props) => (
                     <MetricTooltip
                       active={props.active}
@@ -100,7 +115,7 @@ export default function MetricsCharts({ track, availableMetrics, metricLabels, e
                   dataKey={key}
                   name={key}
                   dot={false}
-                  activeDot={{ r: 4, stroke: "#ffffff", strokeWidth: 2 }}
+                  activeDot={{ r: 4, stroke: CHART_ACTIVE_DOT_COLOR, strokeWidth: 2 }}
                   stroke={metricLabels[key].color}
                   strokeWidth={2}
                   connectNulls

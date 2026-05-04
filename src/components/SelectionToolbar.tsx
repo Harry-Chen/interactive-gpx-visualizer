@@ -3,17 +3,20 @@ import type { Bounds } from "../types";
 import { BASEMAPS, type BasemapId } from "../lib/basemaps";
 import type { Language } from "../lib/i18n";
 import { basemapName, t } from "../lib/i18n";
+import type { ThemeMode } from "../lib/theme";
 
 type SelectionToolbarProps = {
   selectionMode: boolean;
   filterBounds: Bounds | null;
   matchedCount: number;
   basemapId: BasemapId;
+  themeMode: ThemeMode;
   showDirectionArrows: boolean;
   language: Language;
   onToggleSelectionMode: () => void;
   onClearFilter: () => void;
   onBasemapChange: (basemapId: BasemapId) => void;
+  onThemeModeChange: (themeMode: ThemeMode) => void;
   onDirectionArrowsChange: (enabled: boolean) => void;
   onLanguageChange: (language: Language) => void;
 };
@@ -23,11 +26,13 @@ export default function SelectionToolbar({
   filterBounds,
   matchedCount,
   basemapId,
+  themeMode,
   showDirectionArrows,
   language,
   onToggleSelectionMode,
   onClearFilter,
   onBasemapChange,
+  onThemeModeChange,
   onDirectionArrowsChange,
   onLanguageChange
 }: SelectionToolbarProps) {
@@ -77,6 +82,15 @@ export default function SelectionToolbar({
           <span>{t(language, "noFilter")}</span>
         </div>
       )}
+
+      <label className="toolbar-field compact-field">
+        <span>{t(language, "theme")}</span>
+        <select value={themeMode} onChange={(event) => onThemeModeChange(event.target.value as ThemeMode)}>
+          <option value="system">{t(language, "themeSystem")}</option>
+          <option value="light">{t(language, "themeLight")}</option>
+          <option value="dark">{t(language, "themeDark")}</option>
+        </select>
+      </label>
 
       <label className="toolbar-field compact-field">
         <span>{t(language, "language")}</span>

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Info } from "lucide-react";
 import MapView from "./components/MapView";
 import MetricsPanel from "./components/MetricsPanel";
@@ -13,6 +13,7 @@ import { DEFAULT_BASEMAP_ID, type BasemapId } from "./lib/basemaps";
 import { filesFromDataTransfer, isSupportedFile } from "./lib/fileDrop";
 import type { Language } from "./lib/i18n";
 import { t } from "./lib/i18n";
+import { applyThemeMode, persistThemeMode, readThemeMode, type ThemeMode } from "./lib/theme";
 import type { Bounds, ImportProgress, MapHoverPoint, ParsedTrack, Track } from "./types";
 
 const DEFAULT_COLORS = ["#d94848", "#2c7a7b", "#b45309", "#345995", "#7c3aed", "#0f766e", "#c026d3", "#2563eb"];
@@ -34,6 +35,7 @@ export default function App() {
   const [errors, setErrors] = useState<string[]>([]);
   const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null);
   const [basemapId, setBasemapId] = useState<BasemapId>(DEFAULT_BASEMAP_ID);
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => readThemeMode());
   const [showDirectionArrows, setShowDirectionArrows] = useState(false);
   const hoverPointHandlerRef = useRef<(point: MapHoverPoint | null) => void>(() => {});
   const [dragActive, setDragActive] = useState(false);
@@ -54,6 +56,11 @@ export default function App() {
   const handleHoverPoint = useCallback((point: MapHoverPoint | null) => {
     hoverPointHandlerRef.current(point);
   }, []);
+
+  useEffect(() => {
+    applyThemeMode(themeMode);
+    persistThemeMode(themeMode);
+  }, [themeMode]);
 
   async function handleFiles(files: File[]) {
     const supportedFiles = files.filter(isSupportedFile);
@@ -246,6 +253,7 @@ export default function App() {
         filterBounds={filterBounds}
         matchedCount={matchedCount}
         basemapId={basemapId}
+        themeMode={themeMode}
         showDirectionArrows={showDirectionArrows}
         language={language}
         onToggleSelectionMode={() => {
@@ -259,6 +267,7 @@ export default function App() {
         }}
         onClearFilter={handleClearFilter}
         onBasemapChange={setBasemapId}
+        onThemeModeChange={setThemeMode}
         onDirectionArrowsChange={setShowDirectionArrows}
         onLanguageChange={setLanguage}
       />
