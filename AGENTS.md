@@ -12,13 +12,16 @@ The project is MIT licensed and the README states that it was written by Codex, 
 - Run locally with `pnpm dev`.
 - Validate with `pnpm lint` and `pnpm build`.
 - Cloudflare Pages should build with `pnpm build` and publish `dist`.
+- Vite uses `base: "./"` so production assets are emitted with relative URLs and the built app can be served from any path prefix.
 - CI lives in `.github/workflows/ci.yml`. It uses pnpm + Node, runs lint/build, uploads the `dist` artifact, and deploys pushes to `master` to the Cloudflare Pages project `interactive-gpx-visualizer`.
 
 ## Architecture Notes
 
-- The map is implemented with MapLibre GL in globe projection using raster base maps. Base map definitions live in `src/lib/basemaps.ts`; the MapLibre style assembly lives in `src/lib/mapStyle.ts`.
+- The map is implemented with MapLibre GL in globe projection using raster base maps. Base map definitions live in `src/lib/basemaps.ts`; the MapLibre style assembly lives in `src/lib/mapStyle.ts`. The OSM dark basemap uses CARTO Dark Matter raster tiles, which are based on OpenStreetMap data and require both OpenStreetMap and CARTO attribution.
 - Map rendering lives in `src/components/MapView.tsx`. The MapLibre container is nested inside `.map-shell` so React-owned overlays such as the chart-hover marker and drag rectangle can sit above the canvas reliably.
 - Selected tracks are emphasized with dedicated MapLibre line layers (`tracks-selected-halo`, `tracks-selected-casing`, `tracks-selected-line`) instead of relying only on larger line width.
+- Theme mode support lives in `src/lib/theme.ts` and is controlled from the right-side toolbar. Supported modes are `system`, `light`, and `dark`; the preference is persisted in localStorage, while `system` follows `prefers-color-scheme`.
+- Default UI language is detected from `navigator.languages`; use Chinese only for browser languages starting with `zh`, otherwise default to English.
 - GPX and FIT inputs are normalized into the shared `Track` / `TrackPoint` model in `src/types.ts`.
 - GPX parsing lives in `src/lib/parsers.ts` via `fast-xml-parser`.
 - FIT parsing uses `@garmin/fitsdk` and is dynamically imported so the large FIT profile table is not part of the initial app chunk.

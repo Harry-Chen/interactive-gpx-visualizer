@@ -1,4 +1,8 @@
 :root {
+  --chrome-top: 18px;
+  --chrome-left: 20px;
+  --brand-height: 86px;
+  --panel-gap: 14px;
   --page-bg: #eef2ef;
   --mobile-bg: #dfe7e2;
   --map-bg: #c7dde5;
@@ -240,8 +244,8 @@ html[data-theme="dark"] {
 
 .brand-bar {
   position: absolute;
-  top: 18px;
-  left: 20px;
+  top: var(--chrome-top);
+  left: var(--chrome-left);
   z-index: 4;
   display: flex;
   align-items: center;
@@ -303,13 +307,13 @@ html[data-theme="dark"] {
 
 .track-panel {
   position: absolute;
-  top: 96px;
-  left: 20px;
+  top: calc(var(--chrome-top) + var(--brand-height) + var(--panel-gap));
+  left: var(--chrome-left);
   z-index: 4;
   display: flex;
   width: 340px;
   max-width: calc(100vw - 40px);
-  max-height: calc(100vh - 132px);
+  max-height: calc(100vh - var(--chrome-top) - var(--brand-height) - var(--panel-gap) - 20px);
   flex-direction: column;
   gap: 12px;
   padding: 12px;
@@ -597,7 +601,7 @@ html[data-theme="dark"] {
 
 .selection-toolbar {
   position: absolute;
-  top: 18px;
+  top: var(--chrome-top);
   right: 60px;
   z-index: 4;
   display: flex;

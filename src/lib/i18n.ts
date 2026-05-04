@@ -155,12 +155,14 @@ const translations = {
 const basemapNames: Record<Language, Record<BasemapId, string>> = {
   zh: {
     osm: "OSM 标准",
+    osmDark: "OSM 深色",
     osmHot: "OSM 人道主义",
     topo: "OpenTopoMap 地形",
     satellite: "卫星图"
   },
   en: {
     osm: "OSM Standard",
+    osmDark: "OSM Dark",
     osmHot: "OSM Humanitarian",
     topo: "OpenTopoMap",
     satellite: "Satellite"
@@ -187,6 +189,15 @@ export const metricLabelsByLanguage: Record<Language, Record<MetricKey, { label:
 };
 
 export type TranslationKey = keyof (typeof translations)["zh"];
+
+export function detectBrowserLanguage(): Language {
+  if (typeof navigator === "undefined") {
+    return "en";
+  }
+
+  const primaryLanguage = navigator.languages?.[0] ?? navigator.language;
+  return primaryLanguage.toLowerCase().startsWith("zh") ? "zh" : "en";
+}
 
 export function t(language: Language, key: TranslationKey, values: Record<string, string | number> = {}) {
   let text: string = translations[language][key];

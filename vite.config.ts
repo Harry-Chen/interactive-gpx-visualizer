@@ -19,6 +19,7 @@ const dependencyLicenses = buildDependencyLicenses([
 
 export default defineConfig({
   plugins: [react()],
+  base: "./",
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
     __BUILD_DATE__: JSON.stringify(buildDate),

@@ -1,4 +1,4 @@
-export type BasemapId = "osm" | "osmHot" | "topo" | "satellite";
+export type BasemapId = "osm" | "osmDark" | "osmHot" | "topo" | "satellite";
 
 export type Basemap = {
   id: BasemapId;
@@ -28,6 +28,26 @@ export const BASEMAPS: Basemap[] = [
       contrast: 0.08,
       brightnessMin: 0.08,
       brightnessMax: 0.96
+    }
+  },
+  {
+    id: "osmDark",
+    name: "OSM Dark",
+    background: "#0b1518",
+    tiles: [
+      "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+      "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+      "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+      "https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
+    ],
+    maxzoom: 20,
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    paint: {
+      saturation: -0.12,
+      contrast: 0.02,
+      brightnessMin: 0,
+      brightnessMax: 1
     }
   },
   {

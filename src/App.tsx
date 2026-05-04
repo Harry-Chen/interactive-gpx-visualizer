@@ -12,7 +12,7 @@ import { simplifyTrackPoints } from "./lib/simplify";
 import { DEFAULT_BASEMAP_ID, type BasemapId } from "./lib/basemaps";
 import { filesFromDataTransfer, isSupportedFile } from "./lib/fileDrop";
 import type { Language } from "./lib/i18n";
-import { t } from "./lib/i18n";
+import { detectBrowserLanguage, t } from "./lib/i18n";
 import { applyThemeMode, persistThemeMode, readThemeMode, type ThemeMode } from "./lib/theme";
 import type { Bounds, ImportProgress, MapHoverPoint, ParsedTrack, Track } from "./types";
 
@@ -39,7 +39,7 @@ export default function App() {
   const [showDirectionArrows, setShowDirectionArrows] = useState(false);
   const hoverPointHandlerRef = useRef<(point: MapHoverPoint | null) => void>(() => {});
   const [dragActive, setDragActive] = useState(false);
-  const [language, setLanguage] = useState<Language>("zh");
+  const [language, setLanguage] = useState<Language>(() => detectBrowserLanguage());
   const [aboutOpen, setAboutOpen] = useState(false);
   const [metricsHeight, setMetricsHeight] = useState(380);
   const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
@@ -61,6 +61,10 @@ export default function App() {
     applyThemeMode(themeMode);
     persistThemeMode(themeMode);
   }, [themeMode]);
+
+  useEffect(() => {
+    document.documentElement.lang = language === "zh" ? "zh-CN" : "en";
+  }, [language]);
 
   async function handleFiles(files: File[]) {
     const supportedFiles = files.filter(isSupportedFile);
