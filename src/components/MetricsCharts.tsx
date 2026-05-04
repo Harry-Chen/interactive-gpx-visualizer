@@ -1,3 +1,4 @@
+import { useMemo, useRef } from "react";
 import {
   CartesianGrid,
   Line,
@@ -27,23 +28,40 @@ type ChartPoint = TrackPoint & {
 
 export default function MetricsCharts({ track, availableMetrics, metricLabels, emptyText, onHoverPoint }: MetricsChartsProps) {
   const metricOrder = availableMetrics;
-  const chartData: ChartPoint[] = downsampleMetricPoints(track.points, metricOrder).map((point) => ({
-    ...point,
-    distanceKm: Number((point.distance / 1000).toFixed(3)),
-    speed: point.speed ? point.speed * 3.6 : undefined,
-  }));
+  const lastHoverKeyRef = useRef<string | null>(null);
+  const pendingHoverRef = useRef<MapHoverPoint | null>(null);
+  const hoverFrameRef = useRef<number | null>(null);
+  const chartData: ChartPoint[] = useMemo(
+    () =>
+      downsampleMetricPoints(track.points, metricOrder).map((point) => ({
+        ...point,
+        distanceKm: Number((point.distance / 1000).toFixed(3)),
+        speed: point.speed ? point.speed * 3.6 : undefined
+      })),
+    [metricOrder, track.points]
+  );
 
   function handleMouseMove(state: unknown) {
-    const chartState = state as { activePayload?: Array<{ payload?: ChartPoint }> };
+    const chartState = state as { activeLabel?: unknown; activePayload?: Array<{ payload?: ChartPoint }> };
     const payload = chartState.activePayload?.[0]?.payload;
-    if (payload) {
-      const point = track.points[payload.pointIndex];
-      onHoverPoint(point ? { point, trackId: track.id, trackName: track.name } : null);
+    const chartPoint = payload ?? closestChartPoint(chartData, chartState.activeLabel);
+    if (chartPoint) {
+      updateHoverPoint(track, chartPoint, lastHoverKeyRef, pendingHoverRef, hoverFrameRef, onHoverPoint);
     }
   }
 
+  function clearHoverPoint() {
+    lastHoverKeyRef.current = null;
+    pendingHoverRef.current = null;
+    if (hoverFrameRef.current !== null) {
+      window.cancelAnimationFrame(hoverFrameRef.current);
+      hoverFrameRef.current = null;
+    }
+    onHoverPoint(null);
+  }
+
   return (
-    <div className="stacked-chart-grid" onMouseLeave={() => onHoverPoint(null)}>
+    <div className="stacked-chart-grid" onMouseLeave={clearHoverPoint}>
       {metricOrder.length ? (
         metricOrder.map((key) => (
           <div className="chart-block compact-chart" key={key}>
@@ -115,11 +133,12 @@ type TooltipProps = {
 };
 
 function MetricTooltip({ active, payload, metricKey, metricLabels, track }: TooltipProps) {
+  const point = active ? payload?.[0]?.payload : undefined;
+
   if (!active || !payload?.length) {
     return null;
   }
 
-  const point = payload[0].payload;
   if (!point) {
     return null;
   }
@@ -137,6 +156,55 @@ function MetricTooltip({ active, payload, metricKey, metricLabels, track }: Tool
       <span>Moving {formatDuration(movingSeconds)}</span>
     </div>
   );
+}
+
+function updateHoverPoint(
+  track: Track,
+  chartPoint: ChartPoint,
+  lastHoverKeyRef: { current: string | null },
+  pendingHoverRef: { current: MapHoverPoint | null },
+  hoverFrameRef: { current: number | null },
+  onHoverPoint: (point: MapHoverPoint | null) => void
+) {
+  const key = `${track.id}:${chartPoint.pointIndex}`;
+  if (lastHoverKeyRef.current === key) {
+    return;
+  }
+
+  lastHoverKeyRef.current = key;
+  pendingHoverRef.current = toMapHoverPoint(track, chartPoint);
+  if (hoverFrameRef.current !== null) {
+    return;
+  }
+
+  hoverFrameRef.current = window.requestAnimationFrame(() => {
+    hoverFrameRef.current = null;
+    onHoverPoint(pendingHoverRef.current);
+  });
+}
+
+function toMapHoverPoint(track: Track, chartPoint: ChartPoint): MapHoverPoint | null {
+  const point = track.points[chartPoint.pointIndex];
+  return point ? { point, trackId: track.id, trackName: track.name, color: track.color } : null;
+}
+
+function closestChartPoint(points: ChartPoint[], label: unknown) {
+  const distanceKm = typeof label === "number" ? label : Number(label);
+  if (!Number.isFinite(distanceKm)) {
+    return undefined;
+  }
+
+  let closest = points[0];
+  let closestDistance = Math.abs(points[0].distanceKm - distanceKm);
+  for (const point of points) {
+    const distance = Math.abs(point.distanceKm - distanceKm);
+    if (distance < closestDistance) {
+      closest = point;
+      closestDistance = distance;
+    }
+  }
+
+  return closest;
 }
 
 function elapsedFromStart(points: TrackPoint[], pointIndex: number) {

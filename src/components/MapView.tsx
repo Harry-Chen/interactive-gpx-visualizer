@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import maplibregl, { type GeoJSONSource, type LngLatBoundsLike, type Map } from "maplibre-gl";
 import type { Bounds, MapHoverPoint, Track, TrackPoint } from "../types";
 import { mapStyle } from "../lib/mapStyle";
@@ -17,7 +17,7 @@ type MapViewProps = {
   focusRequest: FocusRequest | null;
   basemapId: BasemapId;
   showDirectionArrows: boolean;
-  hoveredPoint: MapHoverPoint | null;
+  onHoverPointReady: (handler: (point: MapHoverPoint | null) => void) => void;
   onSelection: (bounds: Bounds) => void;
   onTrackSelect: (trackId: string) => void;
 };
@@ -25,6 +25,7 @@ type MapViewProps = {
 const TRACK_SOURCE_ID = "tracks";
 const SELECTION_SOURCE_ID = "selection-bounds";
 const ARROW_SOURCE_ID = "direction-arrows";
+const TRACKER_SOURCE_ID = "track-hover-marker";
 
 type GeoJsonData = Parameters<GeoJSONSource["setData"]>[0];
 
@@ -36,7 +37,7 @@ export default function MapView({
   focusRequest,
   basemapId,
   showDirectionArrows,
-  hoveredPoint,
+  onHoverPointReady,
   onSelection,
   onTrackSelect
 }: MapViewProps) {
@@ -50,12 +51,11 @@ export default function MapView({
   const dragRectRef = useRef<HTMLDivElement | null>(null);
   const hoverPopupRef = useRef<maplibregl.Popup | null>(null);
   const lastFocusNonceRef = useRef<number | null>(null);
-  const [hoverMarkerPosition, setHoverMarkerPosition] = useState<{ x: number; y: number } | null>(null);
+  const trackerPointRef = useRef<MapHoverPoint | null>(null);
 
   const trackData = useMemo(() => tracksToGeoJson(tracks, Boolean(filterBounds)), [tracks, filterBounds]);
   const arrowData = useMemo(() => arrowsToGeoJson(tracks, Boolean(filterBounds)), [tracks, filterBounds]);
   const selectionData = useMemo(() => boundsToGeoJson(filterBounds), [filterBounds]);
-  const markerPosition = hoveredPoint ? hoverMarkerPosition : null;
   const trackDataRef = useRef(trackData);
   const arrowDataRef = useRef(arrowData);
   const selectionDataRef = useRef(selectionData);
@@ -80,6 +80,16 @@ export default function MapView({
     element.style.height = `${rect.height}px`;
   }, []);
 
+  const updateTrackerPoint = useCallback((point: MapHoverPoint | null) => {
+    trackerPointRef.current = point;
+    const map = mapRef.current;
+    if (!map || !loadedRef.current) {
+      return;
+    }
+
+    updateSource(map, TRACKER_SOURCE_ID, hoverPointToGeoJson(point));
+  }, []);
+
   useEffect(() => {
     onTrackSelectRef.current = onTrackSelect;
   }, [onTrackSelect]);
@@ -95,6 +105,11 @@ export default function MapView({
   useEffect(() => {
     selectionDataRef.current = selectionData;
   }, [selectionData]);
+
+  useEffect(() => {
+    onHoverPointReady(updateTrackerPoint);
+    return () => onHoverPointReady(() => {});
+  }, [onHoverPointReady, updateTrackerPoint]);
 
   useEffect(() => {
     basemapIdRef.current = basemapId;
@@ -157,6 +172,10 @@ export default function MapView({
         data: emptyFeatureCollection()
       });
       map.addSource(ARROW_SOURCE_ID, {
+        type: "geojson",
+        data: emptyFeatureCollection()
+      });
+      map.addSource(TRACKER_SOURCE_ID, {
         type: "geojson",
         data: emptyFeatureCollection()
       });
@@ -294,6 +313,29 @@ export default function MapView({
           "icon-opacity": 0.92
         }
       });
+      map.addLayer({
+        id: "track-hover-halo",
+        type: "circle",
+        source: TRACKER_SOURCE_ID,
+        paint: {
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 1, 5, 8, 7, 13, 9],
+          "circle-color": "#ffffff",
+          "circle-opacity": 0.92,
+          "circle-stroke-color": "#0f172a",
+          "circle-stroke-width": 1.25
+        }
+      });
+      map.addLayer({
+        id: "track-hover-dot",
+        type: "circle",
+        source: TRACKER_SOURCE_ID,
+        paint: {
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 1, 2.75, 8, 4, 13, 5.5],
+          "circle-color": ["coalesce", ["get", "color"], "#101820"],
+          "circle-stroke-color": "#ffffff",
+          "circle-stroke-width": 1.25
+        }
+      });
       map.on("mouseenter", "tracks-lines", () => {
         map.getCanvas().style.cursor = "pointer";
       });
@@ -329,6 +371,7 @@ export default function MapView({
       updateSource(map, TRACK_SOURCE_ID, trackDataRef.current);
       updateSource(map, ARROW_SOURCE_ID, arrowDataRef.current);
       updateSource(map, SELECTION_SOURCE_ID, selectionDataRef.current);
+      updateSource(map, TRACKER_SOURCE_ID, hoverPointToGeoJson(trackerPointRef.current));
       setBasemapVisibility(map, basemapIdRef.current);
     });
 
@@ -340,7 +383,6 @@ export default function MapView({
       map.remove();
       mapRef.current = null;
       loadedRef.current = false;
-      setHoverMarkerPosition(null);
     };
   }, []);
 
@@ -388,50 +430,6 @@ export default function MapView({
 
     updateSource(map, SELECTION_SOURCE_ID, selectionData);
   }, [selectionData]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !loadedRef.current) {
-      return;
-    }
-
-    if (!hoveredPoint) {
-      return;
-    }
-
-    const updateHoverMarker = () => {
-      const projected = map.project([hoveredPoint.point.lon, hoveredPoint.point.lat]);
-      const canvas = map.getCanvas();
-      const padding = 24;
-      if (
-        projected.x < -padding ||
-        projected.y < -padding ||
-        projected.x > canvas.clientWidth + padding ||
-        projected.y > canvas.clientHeight + padding
-      ) {
-        setHoverMarkerPosition(null);
-        return;
-      }
-
-      setHoverMarkerPosition({ x: projected.x, y: projected.y });
-    };
-
-    const animationFrame = window.requestAnimationFrame(updateHoverMarker);
-    map.on("move", updateHoverMarker);
-    map.on("zoom", updateHoverMarker);
-    map.on("rotate", updateHoverMarker);
-    map.on("pitch", updateHoverMarker);
-    map.on("resize", updateHoverMarker);
-
-    return () => {
-      window.cancelAnimationFrame(animationFrame);
-      map.off("move", updateHoverMarker);
-      map.off("zoom", updateHoverMarker);
-      map.off("rotate", updateHoverMarker);
-      map.off("pitch", updateHoverMarker);
-      map.off("resize", updateHoverMarker);
-    };
-  }, [hoveredPoint]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -588,16 +586,6 @@ export default function MapView({
   return (
     <div className="map-shell" ref={shellRef}>
       <div className="map-container" ref={containerRef} />
-      {hoveredPoint && markerPosition ? (
-        <div
-          className="map-hover-marker"
-          style={{
-            left: markerPosition.x,
-            top: markerPosition.y
-          }}
-          title={hoveredPoint.trackName}
-        />
-      ) : null}
       <div className="drag-selection" ref={dragRectRef} />
     </div>
   );
@@ -642,6 +630,30 @@ function arrowsToGeoJson(tracks: Track[], filterActive: boolean): GeoJsonData {
     features: tracks
       .filter((track) => track.visible && (!filterActive || track.matched) && track.displayPoints.length >= 2)
       .flatMap((track) => directionArrowFeatures(track))
+  };
+}
+
+function hoverPointToGeoJson(hover: MapHoverPoint | null): GeoJsonData {
+  if (!hover) {
+    return emptyFeatureCollection();
+  }
+
+  return {
+    type: "FeatureCollection" as const,
+    features: [
+      {
+        type: "Feature" as const,
+        properties: {
+          trackId: hover.trackId,
+          trackName: hover.trackName,
+          color: hover.color
+        },
+        geometry: {
+          type: "Point" as const,
+          coordinates: [hover.point.lon, hover.point.lat]
+        }
+      }
+    ]
   };
 }
 

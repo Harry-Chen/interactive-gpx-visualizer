@@ -79,4 +79,5 @@ export type MapHoverPoint = {
   point: TrackPoint;
   trackId: string;
   trackName: string;
+  color: string;
 };

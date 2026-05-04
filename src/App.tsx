@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import MapView from "./components/MapView";
 import MetricsPanel from "./components/MetricsPanel";
 import SelectionToolbar from "./components/SelectionToolbar";
@@ -32,7 +32,7 @@ export default function App() {
   const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null);
   const [basemapId, setBasemapId] = useState<BasemapId>(DEFAULT_BASEMAP_ID);
   const [showDirectionArrows, setShowDirectionArrows] = useState(false);
-  const [hoveredPoint, setHoveredPoint] = useState<MapHoverPoint | null>(null);
+  const hoverPointHandlerRef = useRef<(point: MapHoverPoint | null) => void>(() => {});
   const [dragActive, setDragActive] = useState(false);
   const [language, setLanguage] = useState<Language>("zh");
   const [metricsHeight, setMetricsHeight] = useState(380);
@@ -44,6 +44,12 @@ export default function App() {
   const selectedTrack = tracks.find((track) => track.selected);
   const matchedCount = tracks.filter((track) => track.matched).length;
   const sortedTracks = sortTracks(tracks, sortKey, sortDirection);
+  const handleHoverPointReady = useCallback((handler: (point: MapHoverPoint | null) => void) => {
+    hoverPointHandlerRef.current = handler;
+  }, []);
+  const handleHoverPoint = useCallback((point: MapHoverPoint | null) => {
+    hoverPointHandlerRef.current(point);
+  }, []);
 
   async function handleFiles(files: File[]) {
     const supportedFiles = files.filter(isSupportedFile);
@@ -143,7 +149,7 @@ export default function App() {
     setTracks([]);
     setCheckedTrackIds(new Set());
     setFilterBounds(null);
-    setHoveredPoint(null);
+    handleHoverPoint(null);
   }
 
   function handleFocus(trackId: string) {
@@ -189,7 +195,7 @@ export default function App() {
         focusRequest={focusRequest}
         basemapId={basemapId}
         showDirectionArrows={showDirectionArrows}
-        hoveredPoint={hoveredPoint}
+        onHoverPointReady={handleHoverPointReady}
         onSelection={handleSelection}
         onTrackSelect={handleSelect}
       />
@@ -254,7 +260,7 @@ export default function App() {
         language={language}
         height={metricsHeight}
         onHeightChange={setMetricsHeight}
-        onHoverPoint={setHoveredPoint}
+        onHoverPoint={handleHoverPoint}
       />
       <div className="drop-overlay">
         <strong>{t(language, "dropTitle")}</strong>
