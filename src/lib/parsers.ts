@@ -134,7 +134,7 @@ function parseGpx(fileName: string, source: string, language: Language): ParsedT
   if (!tracks.length) {
     const waypoints = toArray(gpx.wpt).map(gpxPointToTrackPoint).filter(isPoint);
     if (waypoints.length >= 2) {
-      tracks.push(createParsedTrack(fileName, "gpx", gpx.metadata?.name || fileName, waypoints));
+      tracks.push(createParsedTrack(fileName, "gpx", gpx.metadata?.name || "GPX Waypoints", waypoints));
     }
   }
 
@@ -173,7 +173,7 @@ async function parseFit(fileName: string, source: ArrayBuffer, language: Languag
     throw new Error(t(language, "parseNoGpsRecords"));
   }
 
-  const name = fitTrackName(messages, fileName);
+  const name = fitTrackName(messages);
   return [createParsedTrack(fileName, "fit", name, rawPoints)];
 }
 
@@ -371,11 +371,9 @@ function normalizeKey(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-function fitTrackName(messages: FitMessages, fileName: string) {
+function fitTrackName(messages: FitMessages) {
   const session = messages.sessionMesgs?.[0];
-  const created = parseDate(messages.fileIdMesgs?.[0]?.timeCreated ?? messages.activityMesgs?.[0]?.timestamp);
-  const date = created ? created.toLocaleDateString() : undefined;
   const sport = [session?.sport, session?.subSport].filter(Boolean).join(" / ");
 
-  return [sport || "FIT Activity", date].filter(Boolean).join(" - ") || fileName;
+  return sport || "FIT Activity";
 }

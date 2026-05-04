@@ -4,6 +4,7 @@ import { formatDistance, formatDuration, formatNumber, formatSpeed } from "../li
 import { numbers } from "../lib/stats";
 import type { Language } from "../lib/i18n";
 import { metricLabelsByLanguage, t } from "../lib/i18n";
+import { trackDate, trackType } from "../lib/trackMetadata";
 
 type MetricsPanelProps = {
   track?: Track;
@@ -66,9 +67,14 @@ export default function MetricsPanel({ track, language, height, onHeightChange, 
       />
       <div className="metrics-heading">
         <div>
-          <span className="eyebrow">{track.kind.toUpperCase()}</span>
+          <span className="eyebrow">{trackType(track)}</span>
           <h2>{track.name}</h2>
         </div>
+        <dl className="track-metadata-grid">
+          <Meta label={t(language, "type")} value={trackType(track)} />
+          <Meta label={t(language, "dateTime")} value={trackDate(track)} />
+          <Meta label={t(language, "file")} value={track.fileName} />
+        </dl>
         <dl className="stats-grid">
           <Stat label={t(language, "distance")} value={formatDistance(track.stats.distance)} />
           <Stat label={t(language, "duration")} value={formatDuration(track.stats.duration)} />
@@ -89,6 +95,15 @@ export default function MetricsPanel({ track, language, height, onHeightChange, 
         />
       </Suspense>
     </section>
+  );
+}
+
+function Meta({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt>{label}</dt>
+      <dd title={value}>{value}</dd>
+    </div>
   );
 }
 

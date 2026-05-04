@@ -1,9 +1,9 @@
 import { Eye, EyeOff, Focus, Palette, Trash2, Upload } from "lucide-react";
 import type { ChangeEvent } from "react";
 import type { ImportProgress, Track } from "../types";
-import { formatDateTime, formatDistance, formatDuration } from "../lib/format";
 import type { Language } from "../lib/i18n";
 import { t } from "../lib/i18n";
+import { trackDate, trackSummary } from "../lib/trackMetadata";
 
 export type TrackSortKey = "name" | "date" | "distance" | "movingTime";
 export type SortDirection = "asc" | "desc";
@@ -169,10 +169,8 @@ export default function TrackPanel({
                 <span className="track-color-dot" style={{ backgroundColor: track.color }} />
                 <div className="track-copy">
                   <h2 title={track.name}>{track.name}</h2>
-                  <p>{formatDateTime(track.stats.startTime)}</p>
-                  <p>
-                    {track.kind.toUpperCase()} · {formatDistance(track.stats.distance)} · {formatDuration(track.stats.movingTime ?? track.stats.duration)}
-                  </p>
+                  <p>{trackDate(track)}</p>
+                  <p>{trackSummary(track)}</p>
                 </div>
               </div>
 

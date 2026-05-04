@@ -773,6 +773,37 @@ html[data-theme="dark"] {
   white-space: nowrap;
 }
 
+.track-metadata-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+
+.track-metadata-grid div {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+  align-items: baseline;
+}
+
+.track-metadata-grid dt {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.track-metadata-grid dd {
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -878,20 +909,40 @@ html[data-theme="dark"] {
 }
 
 .track-hover-popup .maplibregl-popup-content {
-  padding: 6px 9px;
+  padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--tooltip-bg);
   color: var(--ink);
   box-shadow: var(--toolbar-shadow);
-  font: 700 0.78rem/1.2 inherit;
+  font: 700 0.78rem/1.25 inherit;
+}
+
+.track-hover-card {
+  display: grid;
+  gap: 3px;
+  max-width: 260px;
+}
+
+.track-hover-card strong,
+.track-hover-card span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track-hover-card strong {
+  color: var(--ink);
+}
+
+.track-hover-card span {
+  color: var(--muted);
+  font-size: 0.72rem;
 }
 
 .track-hover-popup .maplibregl-popup-tip {
-  border-top-color: var(--tooltip-bg);
-  border-right-color: var(--tooltip-bg);
-  border-bottom-color: var(--tooltip-bg);
-  border-left-color: var(--tooltip-bg);
+  display: none;
 }
 
 .drag-selection {

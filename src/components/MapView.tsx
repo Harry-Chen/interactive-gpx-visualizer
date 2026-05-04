@@ -3,6 +3,7 @@ import maplibregl, { type GeoJSONSource, type LngLatBoundsLike, type Map } from 
 import type { Bounds, MapHoverPoint, Track, TrackPoint } from "../types";
 import { mapStyle } from "../lib/mapStyle";
 import { BASEMAPS, type BasemapId } from "../lib/basemaps";
+import { trackDate, trackSummary, trackType } from "../lib/trackMetadata";
 
 type FocusRequest = {
   trackId: string;
@@ -341,7 +342,8 @@ export default function MapView({
       });
       map.on("mousemove", "tracks-lines", (event) => {
         const feature = event.features?.[0];
-        const trackName = feature?.properties?.trackName;
+        const properties = feature?.properties;
+        const trackName = properties?.trackName;
         if (typeof trackName !== "string" || !event.lngLat) {
           return;
         }
@@ -355,7 +357,17 @@ export default function MapView({
           });
         }
 
-        hoverPopupRef.current.setLngLat(event.lngLat).setHTML(escapeHtml(trackName)).addTo(map);
+        hoverPopupRef.current
+          .setLngLat(event.lngLat)
+          .setHTML(
+            trackTooltipHtml({
+              name: trackName,
+              date: stringProperty(properties?.trackDate),
+              fileName: stringProperty(properties?.fileName),
+              summary: stringProperty(properties?.summary)
+            })
+          )
+          .addTo(map);
       });
       map.on("mouseleave", "tracks-lines", () => {
         map.getCanvas().style.cursor = selectionModeRef.current ? "crosshair" : "";
@@ -613,6 +625,10 @@ function tracksToGeoJson(tracks: Track[], filterActive: boolean): GeoJsonData {
         properties: {
           trackId: track.id,
           trackName: track.name,
+          trackDate: trackDate(track),
+          fileName: track.fileName,
+          summary: trackSummary(track),
+          type: trackType(track),
           color: track.color,
           selected: track.selected
         },
@@ -655,6 +671,30 @@ function hoverPointToGeoJson(hover: MapHoverPoint | null): GeoJsonData {
       }
     ]
   };
+}
+
+function trackTooltipHtml(metadata: {
+  name: string;
+  date?: string;
+  fileName?: string;
+  summary?: string;
+}) {
+  const rows = [metadata.summary, metadata.date, metadata.fileName].filter(isTooltipRow);
+
+  return `
+    <div class="track-hover-card">
+      <strong>${escapeHtml(metadata.name)}</strong>
+      ${rows.map((row) => `<span>${escapeHtml(row)}</span>`).join("")}
+    </div>
+  `;
+}
+
+function stringProperty(value: unknown) {
+  return typeof value === "string" ? value : undefined;
+}
+
+function isTooltipRow(value: string | undefined): value is string {
+  return Boolean(value && value !== "-");
 }
 
 function boundsToGeoJson(bounds: Bounds | null): GeoJsonData {
