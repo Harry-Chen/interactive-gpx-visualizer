@@ -38,7 +38,7 @@ Pull requests run validation without deploying.
 
 ## Notes
 
-Uploaded files stay in the browser. The spatial filter uses a client-side geohash index plus exact segment checks. Rust/WASM is intentionally deferred until real-world imports show that parsing or spatial filtering has become a measurable bottleneck.
+Uploaded files stay in the browser. Parsed tracks are temporarily persisted in the browser's IndexedDB so accidental reloads or development remounts can restore the current workspace without uploading route data. The spatial filter uses a client-side geohash index plus exact segment checks. Rust/WASM is intentionally deferred until real-world imports show that parsing or spatial filtering has become a measurable bottleneck.
 
 ## License
 

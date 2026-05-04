@@ -3,6 +3,9 @@ import type { BasemapId } from "./basemaps";
 
 export type Language = "zh" | "en";
 
+const LANGUAGE_STORAGE_KEY = "interactive-gpx-language";
+const LANGUAGE_VALUES = new Set<Language>(["zh", "en"]);
+
 const translations = {
   zh: {
     appSubtitle: "Earth Routes",
@@ -190,6 +193,31 @@ export const metricLabelsByLanguage: Record<Language, Record<MetricKey, { label:
 
 export type TranslationKey = keyof (typeof translations)["zh"];
 
+export function readLanguagePreference(): Language {
+  if (typeof window === "undefined") {
+    return detectBrowserLanguage();
+  }
+
+  try {
+    const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    return isLanguage(stored) ? stored : detectBrowserLanguage();
+  } catch {
+    return detectBrowserLanguage();
+  }
+}
+
+export function persistLanguagePreference(language: Language) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+  } catch {
+    // Language persistence should never interfere with local file visualization.
+  }
+}
+
 export function detectBrowserLanguage(): Language {
   if (typeof navigator === "undefined") {
     return "en";
@@ -197,6 +225,10 @@ export function detectBrowserLanguage(): Language {
 
   const primaryLanguage = navigator.languages?.[0] ?? navigator.language;
   return primaryLanguage.toLowerCase().startsWith("zh") ? "zh" : "en";
+}
+
+function isLanguage(value: string | null): value is Language {
+  return Boolean(value && LANGUAGE_VALUES.has(value as Language));
 }
 
 export function t(language: Language, key: TranslationKey, values: Record<string, string | number> = {}) {

@@ -12,8 +12,9 @@ import { simplifyTrackPoints } from "./lib/simplify";
 import { DEFAULT_BASEMAP_ID, type BasemapId } from "./lib/basemaps";
 import { filesFromDataTransfer, isSupportedFile } from "./lib/fileDrop";
 import type { Language } from "./lib/i18n";
-import { detectBrowserLanguage, t } from "./lib/i18n";
+import { persistLanguagePreference, readLanguagePreference, t } from "./lib/i18n";
 import { applyThemeMode, persistThemeMode, readThemeMode, type ThemeMode } from "./lib/theme";
+import { clearStoredTracks, readStoredTracks, writeStoredTracks } from "./lib/workspaceStore";
 import type { Bounds, ImportProgress, MapHoverPoint, ParsedTrack, Track } from "./types";
 
 const DEFAULT_COLORS = ["#d94848", "#2c7a7b", "#b45309", "#345995", "#7c3aed", "#0f766e", "#c026d3", "#2563eb"];
@@ -39,8 +40,9 @@ export default function App() {
   const [showDirectionArrows, setShowDirectionArrows] = useState(false);
   const hoverPointHandlerRef = useRef<(point: MapHoverPoint | null) => void>(() => {});
   const [dragActive, setDragActive] = useState(false);
-  const [language, setLanguage] = useState<Language>(() => detectBrowserLanguage());
+  const [language, setLanguage] = useState<Language>(() => readLanguagePreference());
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [workspaceReady, setWorkspaceReady] = useState(false);
   const [metricsHeight, setMetricsHeight] = useState(380);
   const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
   const [checkedTrackIds, setCheckedTrackIds] = useState<Set<string>>(new Set());
@@ -64,7 +66,47 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.lang = language === "zh" ? "zh-CN" : "en";
+    persistLanguagePreference(language);
   }, [language]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    readStoredTracks().then((storedTracks) => {
+      if (cancelled) {
+        return;
+      }
+
+      setTracks((current) => {
+        if (current.length || !storedTracks.length) {
+          return current;
+        }
+
+        return storedTracks;
+      });
+      setWorkspaceReady(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!workspaceReady) {
+      return;
+    }
+
+    const saveTimeout = window.setTimeout(() => {
+      if (tracks.length) {
+        void writeStoredTracks(tracks);
+      } else {
+        void clearStoredTracks();
+      }
+    }, 300);
+
+    return () => window.clearTimeout(saveTimeout);
+  }, [tracks, workspaceReady]);
 
   async function handleFiles(files: File[]) {
     const supportedFiles = files.filter(isSupportedFile);

@@ -22,6 +22,7 @@ The project is MIT licensed and the README states that it was written by Codex, 
 - Selected tracks are emphasized with dedicated MapLibre line layers (`tracks-selected-halo`, `tracks-selected-casing`, `tracks-selected-line`) instead of relying only on larger line width.
 - Theme mode support lives in `src/lib/theme.ts` and is controlled from the right-side toolbar. Supported modes are `system`, `light`, and `dark`; the preference is persisted in localStorage, while `system` follows `prefers-color-scheme`.
 - Default UI language is detected from `navigator.languages`; use Chinese only for browser languages starting with `zh`, otherwise default to English.
+- UI language preference is persisted in localStorage. Parsed track workspace snapshots are persisted in IndexedDB via `src/lib/workspaceStore.ts` so accidental reloads or development remounts do not discard uploaded route data; this still stays entirely in the browser.
 - GPX and FIT inputs are normalized into the shared `Track` / `TrackPoint` model in `src/types.ts`.
 - GPX parsing lives in `src/lib/parsers.ts` via `fast-xml-parser`.
 - FIT parsing uses `@garmin/fitsdk` and is dynamically imported so the large FIT profile table is not part of the initial app chunk.
