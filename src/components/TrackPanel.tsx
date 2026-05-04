@@ -2,6 +2,8 @@ import { Eye, EyeOff, Focus, Palette, Trash2, Upload } from "lucide-react";
 import type { ChangeEvent } from "react";
 import type { Track } from "../types";
 import { formatDistance, formatDuration } from "../lib/format";
+import type { Language } from "../lib/i18n";
+import { t } from "../lib/i18n";
 
 type TrackPanelProps = {
   tracks: Track[];
@@ -10,6 +12,7 @@ type TrackPanelProps = {
   filterActive: boolean;
   matchedCount: number;
   errors: string[];
+  language: Language;
   onFiles: (files: File[]) => void;
   onSelect: (trackId: string) => void;
   onToggleVisible: (trackId: string) => void;
@@ -25,6 +28,7 @@ export default function TrackPanel({
   filterActive,
   matchedCount,
   errors,
+  language,
   onFiles,
   onSelect,
   onToggleVisible,
@@ -45,19 +49,19 @@ export default function TrackPanel({
   return (
     <aside className="track-panel">
       <label className="upload-target">
-        <input type="file" accept=".gpx,.fit,application/gpx+xml" multiple onChange={handleFileChange} />
+        <input type="file" accept=".gpx,.fit,.gpx.gz,.fit.gz,application/gpx+xml" multiple onChange={handleFileChange} />
         <Upload aria-hidden="true" size={20} />
-        <span>{importing ? "正在解析..." : "上传 GPX / FIT"}</span>
+        <span>{importing ? t(language, "importing") : t(language, "upload")}</span>
       </label>
 
       <div className="panel-summary">
         <div>
           <strong>{tracks.length}</strong>
-          <span>Tracks</span>
+          <span>{t(language, "tracks")}</span>
         </div>
         <div>
           <strong>{filterActive ? matchedCount : tracks.length}</strong>
-          <span>{filterActive ? "Matched" : "Visible Set"}</span>
+          <span>{filterActive ? t(language, "matched") : t(language, "visibleSet")}</span>
         </div>
       </div>
 
@@ -88,24 +92,28 @@ export default function TrackPanel({
               </div>
 
               <div className="track-actions" onClick={(event) => event.stopPropagation()}>
-                <button type="button" title={track.visible ? "隐藏轨迹" : "显示轨迹"} onClick={() => onToggleVisible(track.id)}>
+                <button
+                  type="button"
+                  title={track.visible ? t(language, "hideTrack") : t(language, "showTrack")}
+                  onClick={() => onToggleVisible(track.id)}
+                >
                   {track.visible ? <Eye size={17} /> : <EyeOff size={17} />}
                 </button>
-                <label title="切换颜色" className="color-input-label">
+                <label title={t(language, "colorTrack")} className="color-input-label">
                   <Palette size={16} />
                   <input type="color" value={track.color} onChange={(event) => onColorChange(track.id, event.target.value)} />
                 </label>
-                <button type="button" title="缩放到轨迹" onClick={() => onFocus(track.id)}>
+                <button type="button" title={t(language, "focusTrack")} onClick={() => onFocus(track.id)}>
                   <Focus size={17} />
                 </button>
-                <button type="button" title="移除轨迹" onClick={() => onRemove(track.id)}>
+                <button type="button" title={t(language, "removeTrack")} onClick={() => onRemove(track.id)}>
                   <Trash2 size={17} />
                 </button>
               </div>
             </article>
           ))
         ) : (
-          <div className="empty-state">没有匹配的轨迹</div>
+          <div className="empty-state">{t(language, "noMatchedTracks")}</div>
         )}
       </div>
     </aside>

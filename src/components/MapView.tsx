@@ -20,8 +20,6 @@ type MapViewProps = {
   hoveredPoint: TrackPoint | null;
   onSelection: (bounds: Bounds) => void;
   onTrackSelect: (trackId: string) => void;
-  onBasemapChange: (basemapId: BasemapId) => void;
-  onDirectionArrowsChange: (enabled: boolean) => void;
 };
 
 const TRACK_SOURCE_ID = "tracks";
@@ -41,9 +39,7 @@ export default function MapView({
   showDirectionArrows,
   hoveredPoint,
   onSelection,
-  onTrackSelect,
-  onBasemapChange,
-  onDirectionArrowsChange
+  onTrackSelect
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
@@ -387,26 +383,25 @@ export default function MapView({
   }, []);
 
   useEffect(() => {
-    if (!focusRequest) {
+    const request = focusRequest;
+    if (!request) {
       return;
     }
 
-    const track = tracks.find((item) => item.id === focusRequest.trackId);
+    if (request.trackId === "__all__") {
+      const visibleTracks = tracks.filter((track) => track.visible && (!filterBounds || track.matched));
+      const bounds = combineBounds(visibleTracks.map((track) => track.bounds));
+      if (bounds) {
+        fitBounds(bounds);
+      }
+      return;
+    }
+
+    const track = tracks.find((item) => item.id === request.trackId);
     if (track) {
       fitBounds(track.bounds);
     }
-  }, [fitBounds, focusRequest, tracks]);
-
-  useEffect(() => {
-    if (!tracks.length) {
-      return;
-    }
-
-    const visibleTracks = tracks.filter((track) => track.visible && (!filterBounds || track.matched));
-    if (visibleTracks.length === 1) {
-      fitBounds(visibleTracks[0].bounds);
-    }
-  }, [filterBounds, fitBounds, tracks]);
+  }, [filterBounds, fitBounds, focusRequest, tracks]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -490,26 +485,6 @@ export default function MapView({
 
   return (
     <div className="map-shell" ref={containerRef}>
-      <div className="map-layer-control">
-        <label>
-          <span>底图</span>
-          <select value={basemapId} onChange={(event) => onBasemapChange(event.target.value as BasemapId)}>
-            {BASEMAPS.map((basemap) => (
-              <option key={basemap.id} value={basemap.id}>
-                {basemap.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="inline-toggle">
-          <input
-            type="checkbox"
-            checked={showDirectionArrows}
-            onChange={(event) => onDirectionArrowsChange(event.target.checked)}
-          />
-          <span>方向箭头</span>
-        </label>
-      </div>
       <div className="drag-selection" ref={dragRectRef} />
     </div>
   );
@@ -678,4 +653,20 @@ function ensureArrowImage(map: Map) {
   context.lineWidth = 3;
   context.stroke();
   map.addImage("direction-arrow", context.getImageData(0, 0, size, size), { sdf: true, pixelRatio: 2 });
+}
+
+function combineBounds(boundsList: Bounds[]) {
+  if (!boundsList.length) {
+    return undefined;
+  }
+
+  return boundsList.reduce<Bounds>(
+    (combined, bounds) => ({
+      west: Math.min(combined.west, bounds.west),
+      south: Math.min(combined.south, bounds.south),
+      east: Math.max(combined.east, bounds.east),
+      north: Math.max(combined.north, bounds.north)
+    }),
+    boundsList[0]
+  );
 }

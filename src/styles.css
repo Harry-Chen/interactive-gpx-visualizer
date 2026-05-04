@@ -64,57 +64,6 @@ button {
   font-family: inherit;
 }
 
-.map-layer-control {
-  position: absolute;
-  right: 60px;
-  bottom: 88px;
-  z-index: 4;
-  display: flex;
-  align-items: stretch;
-  gap: 8px;
-  padding: 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-  box-shadow: 0 14px 42px rgba(15, 23, 42, 0.13);
-  backdrop-filter: blur(18px);
-}
-
-.map-layer-control label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
-.map-layer-control select {
-  height: 32px;
-  min-width: 150px;
-  border: 1px solid rgba(25, 42, 38, 0.16);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.82);
-  color: var(--ink);
-  font-weight: 700;
-}
-
-.inline-toggle {
-  min-height: 32px;
-  padding: 0 8px;
-  border: 1px solid rgba(25, 42, 38, 0.12);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.66);
-  color: var(--ink);
-  white-space: nowrap;
-}
-
-.inline-toggle input {
-  width: 15px;
-  height: 15px;
-  accent-color: var(--accent);
-}
-
 .brand-bar {
   position: absolute;
   top: 18px;
@@ -318,7 +267,9 @@ button {
 .track-actions button,
 .color-input-label,
 .selection-toolbar button,
-.filter-chip button {
+.filter-chip button,
+.toolbar-field,
+.toolbar-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -372,6 +323,8 @@ button {
   display: flex;
   align-items: center;
   gap: 10px;
+  max-width: calc(100vw - 430px);
+  flex-wrap: wrap;
 }
 
 .selection-toolbar button {
@@ -387,6 +340,43 @@ button {
   border-color: rgba(29, 154, 138, 0.62);
   background: #e5f4ef;
   color: var(--accent-dark);
+}
+
+.toolbar-field,
+.toolbar-toggle {
+  min-height: 42px;
+  gap: 8px;
+  padding: 0 12px;
+  background: var(--panel);
+  box-shadow: 0 14px 42px rgba(15, 23, 42, 0.12);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 720;
+}
+
+.toolbar-field select {
+  height: 30px;
+  min-width: 132px;
+  border: 1px solid rgba(25, 42, 38, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.toolbar-field.compact-field select {
+  min-width: 88px;
+}
+
+.toolbar-toggle {
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.toolbar-toggle input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
 }
 
 .filter-chip {
@@ -424,14 +414,38 @@ button {
   display: grid;
   grid-template-columns: 330px minmax(0, 1fr);
   gap: 14px;
-  min-height: 320px;
-  max-height: min(440px, calc(100vh - 120px));
+  min-height: 260px;
+  max-height: min(680px, calc(100vh - 120px));
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
   box-shadow: var(--shadow);
   backdrop-filter: blur(18px);
+}
+
+.metrics-resize-handle {
+  position: absolute;
+  top: -5px;
+  right: 12px;
+  left: 12px;
+  height: 10px;
+  cursor: ns-resize;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+}
+
+.metrics-resize-handle::after {
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  width: 72px;
+  height: 3px;
+  content: "";
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(25, 42, 38, 0.26);
 }
 
 .metrics-panel.idle {
@@ -453,6 +467,8 @@ button {
 
 .metrics-heading {
   min-width: 0;
+  min-height: 0;
+  overflow: auto;
 }
 
 .eyebrow {
@@ -517,6 +533,7 @@ button {
 .stacked-chart-grid {
   grid-template-columns: minmax(0, 1fr);
   gap: 8px;
+  min-height: 0;
   overflow: auto;
   padding-right: 2px;
 }
@@ -540,6 +557,7 @@ button {
 .compact-chart {
   min-height: 118px;
   padding-top: 8px;
+  flex: 0 0 auto;
 }
 
 .chart-block h3 {
@@ -615,7 +633,6 @@ button {
 
   .brand-bar,
   .selection-toolbar,
-  .map-layer-control,
   .track-panel,
   .metrics-panel {
     position: relative;
@@ -632,10 +649,7 @@ button {
   .selection-toolbar {
     right: auto;
     flex-wrap: wrap;
-  }
-
-  .map-layer-control {
-    flex-wrap: wrap;
+    max-width: none;
   }
 
   .track-panel {
@@ -671,19 +685,11 @@ button {
   }
 
   .selection-toolbar button,
-  .filter-chip {
+  .filter-chip,
+  .toolbar-field,
+  .toolbar-toggle {
     width: 100%;
     justify-content: center;
-  }
-
-  .map-layer-control {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .map-layer-control label,
-  .map-layer-control select {
-    width: 100%;
   }
 
   .panel-summary,

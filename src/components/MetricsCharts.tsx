@@ -15,6 +15,7 @@ type MetricsChartsProps = {
   track: Track;
   availableMetrics: MetricKey[];
   metricLabels: MetricLabelMap;
+  emptyText: string;
   onHoverPoint: (point: TrackPoint | null) => void;
 };
 
@@ -23,7 +24,7 @@ type ChartPoint = TrackPoint & {
   distanceKm: number;
 };
 
-export default function MetricsCharts({ track, availableMetrics, metricLabels, onHoverPoint }: MetricsChartsProps) {
+export default function MetricsCharts({ track, availableMetrics, metricLabels, emptyText, onHoverPoint }: MetricsChartsProps) {
   const metricOrder = availableMetrics;
   const chartData: ChartPoint[] = downsampleMetricPoints(track.points, metricOrder).map((point) => ({
     ...point,
@@ -82,7 +83,7 @@ export default function MetricsCharts({ track, availableMetrics, metricLabels, o
         </div>
         ))
       ) : (
-        <div className="empty-chart">这条轨迹没有可绘制的指标数据</div>
+        <div className="empty-chart">{emptyText}</div>
       )}
     </div>
   );

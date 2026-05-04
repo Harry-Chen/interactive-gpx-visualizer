@@ -9,6 +9,8 @@ import { parseFiles } from "./lib/parsers";
 import { simplifyTrackPoints } from "./lib/simplify";
 import { DEFAULT_BASEMAP_ID, type BasemapId } from "./lib/basemaps";
 import { filesFromDataTransfer, isSupportedFile } from "./lib/fileDrop";
+import type { Language } from "./lib/i18n";
+import { t } from "./lib/i18n";
 import type { Bounds, ParsedTrack, Track, TrackPoint } from "./types";
 
 const DEFAULT_COLORS = ["#d94848", "#2c7a7b", "#b45309", "#345995", "#7c3aed", "#0f766e", "#c026d3", "#2563eb"];
@@ -30,6 +32,8 @@ export default function App() {
   const [showDirectionArrows, setShowDirectionArrows] = useState(false);
   const [hoveredPoint, setHoveredPoint] = useState<TrackPoint | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [language, setLanguage] = useState<Language>("zh");
+  const [metricsHeight, setMetricsHeight] = useState(380);
 
   const selectedTrack = tracks.find((track) => track.selected);
   const matchedCount = tracks.filter((track) => track.matched).length;
@@ -37,13 +41,13 @@ export default function App() {
   async function handleFiles(files: File[]) {
     const supportedFiles = files.filter(isSupportedFile);
     if (!supportedFiles.length) {
-      setErrors(["没有找到支持的 .gpx 或 .fit 文件"]);
+      setErrors([t(language, "noSupportedFiles")]);
       return;
     }
 
     setImporting(true);
     try {
-      const result = await parseFiles(supportedFiles);
+      const result = await parseFiles(supportedFiles, language);
       setErrors(result.errors);
 
       if (result.tracks.length) {
@@ -55,6 +59,7 @@ export default function App() {
           const next = [...current, ...additions];
           return applyFilter(next, filterBounds);
         });
+        window.setTimeout(() => setFocusRequest({ trackId: "__all__", nonce: Date.now() }), 0);
       }
     } finally {
       setImporting(false);
@@ -146,14 +151,12 @@ export default function App() {
         hoveredPoint={hoveredPoint}
         onSelection={handleSelection}
         onTrackSelect={handleSelect}
-        onBasemapChange={setBasemapId}
-        onDirectionArrowsChange={setShowDirectionArrows}
       />
 
       <div className="brand-bar">
         <div>
-          <span>Earth Routes</span>
-          <strong>GPX / FIT Visualizer</strong>
+          <span>{t(language, "appSubtitle")}</span>
+          <strong>{t(language, "appTitle")}</strong>
         </div>
       </div>
 
@@ -161,6 +164,9 @@ export default function App() {
         selectionMode={selectionMode}
         filterBounds={filterBounds}
         matchedCount={matchedCount}
+        basemapId={basemapId}
+        showDirectionArrows={showDirectionArrows}
+        language={language}
         onToggleSelectionMode={() => {
           setSelectionMode((value) => {
             const next = !value;
@@ -171,6 +177,9 @@ export default function App() {
           });
         }}
         onClearFilter={handleClearFilter}
+        onBasemapChange={setBasemapId}
+        onDirectionArrowsChange={setShowDirectionArrows}
+        onLanguageChange={setLanguage}
       />
 
       <TrackPanel
@@ -180,6 +189,7 @@ export default function App() {
         filterActive={Boolean(filterBounds)}
         matchedCount={matchedCount}
         errors={errors}
+        language={language}
         onFiles={handleFiles}
         onSelect={handleSelect}
         onToggleVisible={handleToggleVisible}
@@ -188,10 +198,16 @@ export default function App() {
         onFocus={handleFocus}
       />
 
-      <MetricsPanel track={selectedTrack} onHoverPoint={setHoveredPoint} />
+      <MetricsPanel
+        track={selectedTrack}
+        language={language}
+        height={metricsHeight}
+        onHeightChange={setMetricsHeight}
+        onHoverPoint={setHoveredPoint}
+      />
       <div className="drop-overlay">
-        <strong>拖拽导入 GPX / FIT</strong>
-        <span>支持文件夹递归导入，会自动忽略其他格式</span>
+        <strong>{t(language, "dropTitle")}</strong>
+        <span>{t(language, "dropBody")}</span>
       </div>
     </main>
   );

@@ -1,31 +1,49 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useRef } from "react";
 import type { MetricKey, Track, TrackPoint } from "../types";
 import { formatDistance, formatDuration, formatNumber, formatSpeed } from "../lib/format";
 import { numbers } from "../lib/stats";
+import type { Language } from "../lib/i18n";
+import { metricLabelsByLanguage, t } from "../lib/i18n";
 
 type MetricsPanelProps = {
   track?: Track;
+  language: Language;
+  height: number;
+  onHeightChange: (height: number) => void;
   onHoverPoint: (point: TrackPoint | null) => void;
-};
-
-const metricLabels: Record<MetricKey, { label: string; unit: string; color: string }> = {
-  ele: { label: "海拔", unit: "m", color: "#2c7a7b" },
-  speed: { label: "速度", unit: "km/h", color: "#c2410c" },
-  heartRate: { label: "心率", unit: "bpm", color: "#be123c" },
-  cadence: { label: "踏频", unit: "rpm", color: "#7c3aed" },
-  power: { label: "功率", unit: "W", color: "#b45309" },
-  temperature: { label: "温度", unit: "C", color: "#0f766e" }
 };
 
 const MetricsCharts = lazy(() => import("./MetricsCharts"));
 
-export default function MetricsPanel({ track, onHoverPoint }: MetricsPanelProps) {
+export default function MetricsPanel({ track, language, height, onHeightChange, onHoverPoint }: MetricsPanelProps) {
+  const resizeStartRef = useRef<{ y: number; height: number } | null>(null);
+  const metricLabels = metricLabelsByLanguage[language];
+
+  function startResize(event: React.PointerEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    resizeStartRef.current = { y: event.clientY, height };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function resize(event: React.PointerEvent<HTMLButtonElement>) {
+    const start = resizeStartRef.current;
+    if (!start) {
+      return;
+    }
+
+    onHeightChange(Math.max(260, Math.min(680, start.height + start.y - event.clientY)));
+  }
+
+  function stopResize() {
+    resizeStartRef.current = null;
+  }
+
   if (!track) {
     return (
       <section className="metrics-panel idle">
         <div>
-          <h2>上传并选择一条轨迹</h2>
-          <p>轨迹的爬升、时间、速度和 FIT/GPX 扩展数据会在这里展开。</p>
+          <h2>{t(language, "uploadPromptTitle")}</h2>
+          <p>{t(language, "uploadPromptBody")}</p>
         </div>
       </section>
     );
@@ -36,27 +54,37 @@ export default function MetricsPanel({ track, onHoverPoint }: MetricsPanelProps)
   );
 
   return (
-    <section className="metrics-panel">
+    <section className="metrics-panel" style={{ height }}>
+      <button
+        type="button"
+        className="metrics-resize-handle"
+        aria-label="Resize metrics panel"
+        onPointerDown={startResize}
+        onPointerMove={resize}
+        onPointerUp={stopResize}
+        onPointerCancel={stopResize}
+      />
       <div className="metrics-heading">
         <div>
           <span className="eyebrow">{track.kind.toUpperCase()}</span>
           <h2>{track.name}</h2>
         </div>
         <dl className="stats-grid">
-          <Stat label="距离" value={formatDistance(track.stats.distance)} />
-          <Stat label="用时" value={formatDuration(track.stats.duration)} />
-          <Stat label="爬升" value={formatNumber(track.stats.elevationGain, " m")} />
-          <Stat label="均速" value={formatSpeed(track.stats.avgSpeed)} />
-          <Stat label="平均心率" value={formatNumber(track.stats.avgHeartRate, " bpm")} />
-          <Stat label="平均功率" value={formatNumber(track.stats.avgPower, " W")} />
+          <Stat label={t(language, "distance")} value={formatDistance(track.stats.distance)} />
+          <Stat label={t(language, "duration")} value={formatDuration(track.stats.duration)} />
+          <Stat label={t(language, "elevationGain")} value={formatNumber(track.stats.elevationGain, " m")} />
+          <Stat label={t(language, "avgSpeed")} value={formatSpeed(track.stats.avgSpeed)} />
+          <Stat label={t(language, "avgHeartRate")} value={formatNumber(track.stats.avgHeartRate, " bpm")} />
+          <Stat label={t(language, "avgPower")} value={formatNumber(track.stats.avgPower, " W")} />
         </dl>
       </div>
 
-      <Suspense fallback={<div className="chart-grid loading-chart">正在加载图表...</div>}>
+      <Suspense fallback={<div className="chart-grid loading-chart">{t(language, "loadingCharts")}</div>}>
         <MetricsCharts
           track={track}
           availableMetrics={availableMetrics}
           metricLabels={metricLabels}
+          emptyText={t(language, "emptyMetrics")}
           onHoverPoint={onHoverPoint}
         />
       </Suspense>
@@ -73,4 +101,4 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-export type MetricLabelMap = typeof metricLabels;
+export type MetricLabelMap = Record<MetricKey, { label: string; unit: string; color: string }>;

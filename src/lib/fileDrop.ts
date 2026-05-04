@@ -1,4 +1,4 @@
-const SUPPORTED_EXTENSIONS = new Set(["gpx", "fit"]);
+const SUPPORTED_EXTENSIONS = [".gpx", ".fit", ".gpx.gz", ".fit.gz"];
 
 type DroppedFileSystemEntry = {
   isFile: boolean;
@@ -28,8 +28,8 @@ export async function filesFromDataTransfer(dataTransfer: DataTransfer) {
 }
 
 export function isSupportedFile(file: File) {
-  const extension = file.name.split(".").pop()?.toLowerCase();
-  return extension ? SUPPORTED_EXTENSIONS.has(extension) : false;
+  const name = file.name.toLowerCase();
+  return SUPPORTED_EXTENSIONS.some((extension) => name.endsWith(extension));
 }
 
 async function filesFromItems(items: EntryDataTransferItem[]) {

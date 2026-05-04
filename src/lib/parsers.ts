@@ -1,5 +1,7 @@
 import { XMLParser } from "fast-xml-parser";
 import type { FileKind, ParsedTrack, TrackPoint, UploadResult } from "../types";
+import type { Language } from "./i18n";
+import { t } from "./i18n";
 import { calculateBounds } from "./geo";
 import { calculateTrackStats, enrichPoints } from "./stats";
 
@@ -64,42 +66,43 @@ const xmlParser = new XMLParser({
   parseTagValue: true
 });
 
-export async function parseFiles(files: File[]): Promise<UploadResult> {
+export async function parseFiles(files: File[], language: Language): Promise<UploadResult> {
   const tracks: ParsedTrack[] = [];
   const errors: string[] = [];
 
   for (const file of files) {
     try {
-      const parsed = await parseFile(file);
+      const parsed = await parseFile(file, language);
       tracks.push(...parsed);
     } catch (error) {
-      errors.push(`${file.name}: ${error instanceof Error ? error.message : "无法解析文件"}`);
+      errors.push(`${file.name}: ${error instanceof Error ? error.message : "Unable to parse file"}`);
     }
   }
 
   return { tracks, errors };
 }
 
-async function parseFile(file: File): Promise<ParsedTrack[]> {
-  const kind = detectKind(file);
+async function parseFile(file: File, language: Language): Promise<ParsedTrack[]> {
+  const { kind, gzip } = detectFile(file);
+  const source = gzip ? await decompressGzip(file, language) : await file.arrayBuffer();
 
   if (kind === "gpx") {
-    return parseGpx(file.name, await file.text());
+    return parseGpx(file.name, decodeText(source), language);
   }
 
   if (kind === "fit") {
-    return parseFit(file.name, await file.arrayBuffer());
+    return parseFit(file.name, source, language);
   }
 
-  throw new Error("仅支持 .gpx 和 .fit 文件");
+  throw new Error(t(language, "parseUnsupported"));
 }
 
-function parseGpx(fileName: string, source: string): ParsedTrack[] {
+function parseGpx(fileName: string, source: string, language: Language): ParsedTrack[] {
   const document = xmlParser.parse(source) as GpxDocument;
   const gpx = document.gpx;
 
   if (!gpx) {
-    throw new Error("不是有效的 GPX 文件");
+    throw new Error(t(language, "parseInvalidGpx"));
   }
 
   const tracks: ParsedTrack[] = [];
@@ -129,19 +132,19 @@ function parseGpx(fileName: string, source: string): ParsedTrack[] {
   }
 
   if (!tracks.length) {
-    throw new Error("没有找到可绘制的路线点");
+    throw new Error(t(language, "parseNoRoutePoints"));
   }
 
   return tracks;
 }
 
-async function parseFit(fileName: string, source: ArrayBuffer): Promise<ParsedTrack[]> {
+async function parseFit(fileName: string, source: ArrayBuffer, language: Language): Promise<ParsedTrack[]> {
   const { Decoder, Stream } = await import("@garmin/fitsdk");
   const stream = Stream.fromArrayBuffer(source);
   const decoder = new Decoder(stream);
 
   if (!decoder.isFIT()) {
-    throw new Error("不是有效的 FIT 文件");
+    throw new Error(t(language, "parseInvalidFit"));
   }
 
   const { messages, errors } = decoder.read({
@@ -155,12 +158,12 @@ async function parseFit(fileName: string, source: ArrayBuffer): Promise<ParsedTr
   }) as { messages: FitMessages; errors: unknown[] };
 
   if (errors.length) {
-    throw new Error("FIT 解码失败");
+    throw new Error(t(language, "parseFitFailed"));
   }
 
   const rawPoints = (messages.recordMesgs ?? []).map(fitRecordToTrackPoint).filter(isPoint);
   if (rawPoints.length < 2) {
-    throw new Error("没有找到可绘制的 GPS 记录");
+    throw new Error(t(language, "parseNoGpsRecords"));
   }
 
   const name = fitTrackName(messages, fileName);
@@ -229,18 +232,37 @@ function fitRecordToTrackPoint(record: FitRecord): (Omit<TrackPoint, "distance">
   };
 }
 
-function detectKind(file: File): FileKind | undefined {
-  const extension = file.name.split(".").pop()?.toLowerCase();
+function detectFile(file: File): { kind?: FileKind; gzip: boolean } {
+  const name = file.name.toLowerCase();
+  const gzip = name.endsWith(".gz");
+  const baseName = gzip ? name.slice(0, -3) : name;
 
-  if (extension === "gpx") {
-    return "gpx";
+  if (baseName.endsWith(".gpx")) {
+    return { kind: "gpx", gzip };
   }
 
-  if (extension === "fit") {
-    return "fit";
+  if (baseName.endsWith(".fit")) {
+    return { kind: "fit", gzip };
   }
 
-  return undefined;
+  return { gzip };
+}
+
+async function decompressGzip(file: File, language: Language) {
+  if (!("DecompressionStream" in window)) {
+    throw new Error(t(language, "parseGzipUnsupported"));
+  }
+
+  try {
+    const stream = file.stream().pipeThrough(new DecompressionStream("gzip"));
+    return await new Response(stream).arrayBuffer();
+  } catch {
+    throw new Error(t(language, "parseGzipFailed"));
+  }
+}
+
+function decodeText(source: ArrayBuffer) {
+  return new TextDecoder("utf-8").decode(source);
 }
 
 function toArray<T>(value: T | T[] | undefined): T[] {
