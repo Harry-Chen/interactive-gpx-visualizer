@@ -8,6 +8,8 @@ Public site: <https://gpx.harrychen.xyz>
 
 This project was written by Codex, an AI coding agent, through iterative prompts and human review.
 
+The project is inspired by [GPX Studio](https://github.com/gpxstudio/gpxstudio.github.io), while adding FIT support, local gzip import, multi-track management, and an important geographical range query workflow for finding tracks that pass through a selected area.
+
 ## Stack
 
 - Vite + React + TypeScript
