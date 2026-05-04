@@ -23,7 +23,10 @@ type TrackPanelProps = {
   onFiles: (files: File[]) => void;
   onSelect: (trackId: string) => void;
   onCheck: (trackId: string, checked: boolean) => void;
+  onCheckMany: (trackIds: string[], checked: boolean) => void;
+  onClearChecked: () => void;
   onToggleVisible: (trackId: string) => void;
+  onSetCheckedVisible: (visible: boolean) => void;
   onColorChange: (trackId: string, color: string) => void;
   onRemove: (trackId: string) => void;
   onFocus: (trackId: string) => void;
@@ -48,7 +51,10 @@ export default function TrackPanel({
   onFiles,
   onSelect,
   onCheck,
+  onCheckMany,
+  onClearChecked,
   onToggleVisible,
+  onSetCheckedVisible,
   onColorChange,
   onRemove,
   onFocus,
@@ -58,6 +64,10 @@ export default function TrackPanel({
   onSortDirectionChange
 }: TrackPanelProps) {
   const shownTracks = filterActive ? tracks.filter((track) => track.matched) : tracks;
+  const shownTrackIds = shownTracks.map((track) => track.id);
+  const selectedShownCount = shownTrackIds.filter((trackId) => checkedTrackIds.has(trackId)).length;
+  const allShownChecked = shownTracks.length > 0 && selectedShownCount === shownTracks.length;
+  const hasCheckedTracks = checkedTrackIds.size > 0;
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
@@ -93,13 +103,27 @@ export default function TrackPanel({
       </div>
 
       <div className="track-bulk-toolbar">
-        <span>{t(language, "selectedCount", { count: checkedTrackIds.size })}</span>
-        <button type="button" disabled={!checkedTrackIds.size} onClick={onRemoveChecked}>
-          {t(language, "deleteSelected")}
-        </button>
-        <button type="button" disabled={!tracks.length} onClick={onClearAll}>
-          {t(language, "clearAll")}
-        </button>
+        <span className="track-bulk-status">{t(language, "selectedCount", { count: checkedTrackIds.size })}</span>
+        <div className="track-bulk-actions">
+          <button type="button" disabled={!shownTracks.length || allShownChecked} onClick={() => onCheckMany(shownTrackIds, true)}>
+            {t(language, "selectAll")}
+          </button>
+          <button type="button" disabled={!hasCheckedTracks} onClick={onClearChecked}>
+            {t(language, "clearSelection")}
+          </button>
+          <button type="button" disabled={!hasCheckedTracks} onClick={() => onSetCheckedVisible(true)}>
+            {t(language, "showSelected")}
+          </button>
+          <button type="button" disabled={!hasCheckedTracks} onClick={() => onSetCheckedVisible(false)}>
+            {t(language, "hideSelected")}
+          </button>
+          <button type="button" disabled={!hasCheckedTracks} onClick={onRemoveChecked}>
+            {t(language, "deleteSelected")}
+          </button>
+          <button type="button" disabled={!tracks.length} onClick={onClearAll}>
+            {t(language, "clearAll")}
+          </button>
+        </div>
       </div>
 
       <div className="track-sort-toolbar">

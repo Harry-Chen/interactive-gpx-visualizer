@@ -76,6 +76,8 @@ button {
   z-index: 4;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   min-width: 260px;
   max-width: min(360px, calc(100vw - 40px));
   padding: 14px 16px;
@@ -108,6 +110,26 @@ button {
   color: var(--muted);
   font-size: 0.68rem;
   font-weight: 700;
+}
+
+.about-button {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  border: 1px solid rgba(25, 42, 38, 0.13);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--accent-dark);
+}
+
+.about-button:hover {
+  border-color: rgba(29, 154, 138, 0.5);
+  background: rgba(239, 249, 246, 0.92);
 }
 
 .track-panel {
@@ -183,14 +205,16 @@ button {
 }
 
 .error-list {
-  max-height: 96px;
+  min-height: 58px;
+  max-height: min(180px, 22vh);
   overflow: auto;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border: 1px solid rgba(180, 35, 55, 0.22);
   border-radius: 8px;
   background: rgba(255, 241, 242, 0.86);
   color: var(--danger);
   font-size: 0.8rem;
+  line-height: 1.35;
 }
 
 .error-list p {
@@ -293,10 +317,21 @@ button {
 }
 
 .track-bulk-toolbar {
-  justify-content: space-between;
+  align-items: stretch;
+  flex-direction: column;
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 700;
+}
+
+.track-bulk-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.track-bulk-status {
+  line-height: 1.2;
 }
 
 .track-bulk-toolbar button,
@@ -308,9 +343,12 @@ button {
 }
 
 .track-bulk-toolbar button {
-  padding: 0 9px;
+  min-width: 0;
+  padding: 0 7px;
   cursor: pointer;
   color: var(--ink);
+  font-size: 0.74rem;
+  white-space: nowrap;
 }
 
 .track-bulk-toolbar button:disabled {
@@ -719,6 +757,126 @@ button {
   display: grid;
 }
 
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(12, 18, 16, 0.34);
+  backdrop-filter: blur(8px);
+}
+
+.about-dialog {
+  width: min(640px, calc(100vw - 40px));
+  max-height: min(700px, calc(100vh - 40px));
+  overflow: auto;
+  padding: 18px;
+  border: 1px solid rgba(25, 42, 38, 0.18);
+  border-radius: 8px;
+  background: var(--panel-solid);
+  box-shadow: 0 26px 80px rgba(15, 23, 42, 0.28);
+}
+
+.about-dialog header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.about-dialog h2,
+.about-dialog h3 {
+  margin: 0;
+  color: var(--ink);
+}
+
+.about-dialog h2 {
+  font-size: 1.08rem;
+}
+
+.about-dialog h3 {
+  margin-top: 16px;
+  font-size: 0.92rem;
+}
+
+.about-dialog header button {
+  min-height: 34px;
+  padding: 0 12px;
+  cursor: pointer;
+  border: 1px solid rgba(25, 42, 38, 0.13);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--ink);
+  font-weight: 720;
+}
+
+.about-dialog a {
+  color: var(--accent-dark);
+  font-weight: 720;
+}
+
+.about-meta {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 0;
+}
+
+.about-meta div {
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr);
+  gap: 14px;
+}
+
+.about-meta dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.about-meta dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
+}
+
+.dependency-table {
+  display: grid;
+  margin-top: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(25, 42, 38, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.dependency-table div {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) 92px minmax(110px, 0.8fr);
+  gap: 10px;
+  padding: 9px 11px;
+}
+
+.dependency-table div + div {
+  border-top: 1px solid rgba(25, 42, 38, 0.09);
+}
+
+.dependency-table span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.dependency-table span:first-child {
+  color: var(--ink);
+  font-weight: 760;
+}
+
 @media (max-width: 980px) {
   body {
     overflow: auto;
@@ -800,5 +958,16 @@ button {
   .panel-summary,
   .stats-grid {
     grid-template-columns: 1fr;
+  }
+
+  .modal-backdrop {
+    align-items: start;
+    overflow: auto;
+  }
+
+  .about-meta div,
+  .dependency-table div {
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 }

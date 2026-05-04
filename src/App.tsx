@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { Info } from "lucide-react";
 import MapView from "./components/MapView";
 import MetricsPanel from "./components/MetricsPanel";
 import SelectionToolbar from "./components/SelectionToolbar";
@@ -16,6 +17,8 @@ import type { Bounds, ImportProgress, MapHoverPoint, ParsedTrack, Track } from "
 
 const DEFAULT_COLORS = ["#d94848", "#2c7a7b", "#b45309", "#345995", "#7c3aed", "#0f766e", "#c026d3", "#2563eb"];
 const BUILD_LABEL = `${__APP_VERSION__} · ${formatBuildDate(__BUILD_DATE__)}`;
+const REPOSITORY_URL = "https://github.com/Harry-Chen/interactive-gpx-visualizer";
+const PUBLIC_SITE_URL = "https://gpx.harrychen.xyz";
 
 type FocusRequest = {
   trackId: string;
@@ -35,6 +38,7 @@ export default function App() {
   const hoverPointHandlerRef = useRef<(point: MapHoverPoint | null) => void>(() => {});
   const [dragActive, setDragActive] = useState(false);
   const [language, setLanguage] = useState<Language>("zh");
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [metricsHeight, setMetricsHeight] = useState(380);
   const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
   const [checkedTrackIds, setCheckedTrackIds] = useState<Set<string>>(new Set());
@@ -133,6 +137,26 @@ export default function App() {
     });
   }
 
+  function handleCheckMany(trackIds: string[], checked: boolean) {
+    setCheckedTrackIds((current) => {
+      const next = new Set(current);
+      for (const trackId of trackIds) {
+        if (checked) {
+          next.add(trackId);
+        } else {
+          next.delete(trackId);
+        }
+      }
+      return next;
+    });
+  }
+
+  function handleSetCheckedVisible(visible: boolean) {
+    setTracks((current) =>
+      current.map((track) => (checkedTrackIds.has(track.id) ? { ...track, visible } : track))
+    );
+  }
+
   function handleRemoveChecked() {
     setTracks((current) => {
       const next = current.filter((track) => !checkedTrackIds.has(track.id));
@@ -206,6 +230,15 @@ export default function App() {
           <strong>{t(language, "appTitle")}</strong>
           <small>{BUILD_LABEL}</small>
         </div>
+        <button
+          type="button"
+          aria-label={t(language, "about")}
+          className="about-button"
+          title={t(language, "about")}
+          onClick={() => setAboutOpen(true)}
+        >
+          <Info size={18} />
+        </button>
       </div>
 
       <SelectionToolbar
@@ -245,7 +278,10 @@ export default function App() {
         onFiles={handleFiles}
         onSelect={handleSelect}
         onCheck={handleCheck}
+        onCheckMany={handleCheckMany}
+        onClearChecked={() => setCheckedTrackIds(new Set())}
         onToggleVisible={handleToggleVisible}
+        onSetCheckedVisible={handleSetCheckedVisible}
         onColorChange={handleColorChange}
         onRemove={handleRemove}
         onFocus={handleFocus}
@@ -266,6 +302,64 @@ export default function App() {
         <strong>{t(language, "dropTitle")}</strong>
         <span>{t(language, "dropBody")}</span>
       </div>
+
+      {aboutOpen ? (
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => setAboutOpen(false)}>
+          <section
+            aria-modal="true"
+            className="about-dialog"
+            role="dialog"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header>
+              <h2>{t(language, "aboutTitle")}</h2>
+              <button type="button" onClick={() => setAboutOpen(false)}>
+                {t(language, "close")}
+              </button>
+            </header>
+            <dl className="about-meta">
+              <div>
+                <dt>{t(language, "version")}</dt>
+                <dd>{__APP_VERSION__}</dd>
+              </div>
+              <div>
+                <dt>{t(language, "buildDate")}</dt>
+                <dd>{formatBuildDate(__BUILD_DATE__)}</dd>
+              </div>
+              <div>
+                <dt>{t(language, "license")}</dt>
+                <dd>MIT</dd>
+              </div>
+              <div>
+                <dt>{t(language, "repository")}</dt>
+                <dd>
+                  <a href={REPOSITORY_URL} rel="noreferrer" target="_blank">
+                    {REPOSITORY_URL}
+                  </a>
+                </dd>
+              </div>
+              <div>
+                <dt>{t(language, "publicSite")}</dt>
+                <dd>
+                  <a href={PUBLIC_SITE_URL} rel="noreferrer" target="_blank">
+                    {PUBLIC_SITE_URL}
+                  </a>
+                </dd>
+              </div>
+            </dl>
+            <h3>{t(language, "dependencies")}</h3>
+            <div className="dependency-table">
+              {__DEPENDENCY_LICENSES__.map((dependency) => (
+                <div key={dependency.name}>
+                  <span>{dependency.name}</span>
+                  <span>{dependency.version}</span>
+                  <span>{dependency.license}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      ) : null}
     </main>
   );
 }

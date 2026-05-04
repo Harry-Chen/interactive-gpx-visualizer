@@ -2,6 +2,11 @@
 
 declare const __APP_VERSION__: string;
 declare const __BUILD_DATE__: string;
+declare const __DEPENDENCY_LICENSES__: Array<{
+  name: string;
+  version: string;
+  license: string;
+}>;
 
 declare module "@garmin/fitsdk" {
   export class Stream {
