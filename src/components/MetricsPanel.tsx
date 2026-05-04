@@ -1,5 +1,5 @@
 import { lazy, Suspense, useRef } from "react";
-import type { MetricKey, Track, TrackPoint } from "../types";
+import type { MapHoverPoint, MetricKey, Track } from "../types";
 import { formatDistance, formatDuration, formatNumber, formatSpeed } from "../lib/format";
 import { numbers } from "../lib/stats";
 import type { Language } from "../lib/i18n";
@@ -10,7 +10,7 @@ type MetricsPanelProps = {
   language: Language;
   height: number;
   onHeightChange: (height: number) => void;
-  onHoverPoint: (point: TrackPoint | null) => void;
+  onHoverPoint: (point: MapHoverPoint | null) => void;
 };
 
 const MetricsCharts = lazy(() => import("./MetricsCharts"));

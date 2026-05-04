@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { type GeoJSONSource, type LngLatBoundsLike, type Map } from "maplibre-gl";
-import type { Bounds, Track, TrackPoint } from "../types";
+import type { Bounds, MapHoverPoint, Track, TrackPoint } from "../types";
 import { mapStyle } from "../lib/mapStyle";
 import { BASEMAPS, type BasemapId } from "../lib/basemaps";
 
@@ -17,7 +17,7 @@ type MapViewProps = {
   focusRequest: FocusRequest | null;
   basemapId: BasemapId;
   showDirectionArrows: boolean;
-  hoveredPoint: TrackPoint | null;
+  hoveredPoint: MapHoverPoint | null;
   onSelection: (bounds: Bounds) => void;
   onTrackSelect: (trackId: string) => void;
 };
@@ -25,7 +25,6 @@ type MapViewProps = {
 const TRACK_SOURCE_ID = "tracks";
 const SELECTION_SOURCE_ID = "selection-bounds";
 const ARROW_SOURCE_ID = "direction-arrows";
-const HOVER_SOURCE_ID = "hover-point";
 
 type GeoJsonData = Parameters<GeoJSONSource["setData"]>[0];
 
@@ -41,6 +40,7 @@ export default function MapView({
   onSelection,
   onTrackSelect
 }: MapViewProps) {
+  const shellRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
   const loadedRef = useRef(false);
@@ -48,15 +48,17 @@ export default function MapView({
   const onTrackSelectRef = useRef(onTrackSelect);
   const selectionModeRef = useRef(selectionMode);
   const dragRectRef = useRef<HTMLDivElement | null>(null);
+  const hoverPopupRef = useRef<maplibregl.Popup | null>(null);
+  const lastFocusNonceRef = useRef<number | null>(null);
+  const [hoverMarkerPosition, setHoverMarkerPosition] = useState<{ x: number; y: number } | null>(null);
 
   const trackData = useMemo(() => tracksToGeoJson(tracks, Boolean(filterBounds)), [tracks, filterBounds]);
   const arrowData = useMemo(() => arrowsToGeoJson(tracks, Boolean(filterBounds)), [tracks, filterBounds]);
   const selectionData = useMemo(() => boundsToGeoJson(filterBounds), [filterBounds]);
-  const hoverData = useMemo(() => pointToGeoJson(hoveredPoint), [hoveredPoint]);
+  const markerPosition = hoveredPoint ? hoverMarkerPosition : null;
   const trackDataRef = useRef(trackData);
   const arrowDataRef = useRef(arrowData);
   const selectionDataRef = useRef(selectionData);
-  const hoverDataRef = useRef(hoverData);
   const basemapIdRef = useRef(basemapId);
   const showDirectionArrowsRef = useRef(showDirectionArrows);
 
@@ -93,10 +95,6 @@ export default function MapView({
   useEffect(() => {
     selectionDataRef.current = selectionData;
   }, [selectionData]);
-
-  useEffect(() => {
-    hoverDataRef.current = hoverData;
-  }, [hoverData]);
 
   useEffect(() => {
     basemapIdRef.current = basemapId;
@@ -162,10 +160,6 @@ export default function MapView({
         type: "geojson",
         data: emptyFeatureCollection()
       });
-      map.addSource(HOVER_SOURCE_ID, {
-        type: "geojson",
-        data: emptyFeatureCollection()
-      });
 
       map.addLayer({
         id: "selection-fill",
@@ -196,7 +190,17 @@ export default function MapView({
         },
         paint: {
           "line-color": "#0f172a",
-          "line-width": ["case", ["boolean", ["get", "selected"], false], 7, 5],
+          "line-width": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            1,
+            ["case", ["boolean", ["get", "selected"], false], 2.4, 1.7],
+            5,
+            ["case", ["boolean", ["get", "selected"], false], 5, 3.6],
+            12,
+            ["case", ["boolean", ["get", "selected"], false], 8, 5.4]
+          ],
           "line-opacity": 0.42
         }
       });
@@ -210,8 +214,63 @@ export default function MapView({
         },
         paint: {
           "line-color": ["coalesce", ["get", "color"], "#d94848"],
-          "line-width": ["case", ["boolean", ["get", "selected"], false], 5, 3.3],
+          "line-width": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            1,
+            ["case", ["boolean", ["get", "selected"], false], 1.6, 1],
+            5,
+            ["case", ["boolean", ["get", "selected"], false], 3.4, 2.2],
+            12,
+            ["case", ["boolean", ["get", "selected"], false], 5.6, 3.8]
+          ],
           "line-opacity": ["case", ["boolean", ["get", "selected"], false], 1, 0.88]
+        }
+      });
+      map.addLayer({
+        id: "tracks-selected-halo",
+        type: "line",
+        source: TRACK_SOURCE_ID,
+        filter: ["==", ["get", "selected"], true],
+        layout: {
+          "line-cap": "round",
+          "line-join": "round"
+        },
+        paint: {
+          "line-color": "#ffffff",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 1, 5.2, 5, 9, 12, 13],
+          "line-opacity": 0.92
+        }
+      });
+      map.addLayer({
+        id: "tracks-selected-casing",
+        type: "line",
+        source: TRACK_SOURCE_ID,
+        filter: ["==", ["get", "selected"], true],
+        layout: {
+          "line-cap": "round",
+          "line-join": "round"
+        },
+        paint: {
+          "line-color": "#0f172a",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 1, 3.7, 5, 6.4, 12, 9],
+          "line-opacity": 0.82
+        }
+      });
+      map.addLayer({
+        id: "tracks-selected-line",
+        type: "line",
+        source: TRACK_SOURCE_ID,
+        filter: ["==", ["get", "selected"], true],
+        layout: {
+          "line-cap": "round",
+          "line-join": "round"
+        },
+        paint: {
+          "line-color": ["coalesce", ["get", "color"], "#d94848"],
+          "line-width": ["interpolate", ["linear"], ["zoom"], 1, 2.1, 5, 4.4, 12, 6.4],
+          "line-opacity": 1
         }
       });
       ensureArrowImage(map);
@@ -235,33 +294,30 @@ export default function MapView({
           "icon-opacity": 0.92
         }
       });
-      map.addLayer({
-        id: "hover-point-halo",
-        type: "circle",
-        source: HOVER_SOURCE_ID,
-        paint: {
-          "circle-radius": 9,
-          "circle-color": "#ffffff",
-          "circle-opacity": 0.86
-        }
-      });
-      map.addLayer({
-        id: "hover-point-dot",
-        type: "circle",
-        source: HOVER_SOURCE_ID,
-        paint: {
-          "circle-radius": 5,
-          "circle-color": "#101820",
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "#ffffff"
-        }
-      });
-
       map.on("mouseenter", "tracks-lines", () => {
         map.getCanvas().style.cursor = "pointer";
       });
+      map.on("mousemove", "tracks-lines", (event) => {
+        const feature = event.features?.[0];
+        const trackName = feature?.properties?.trackName;
+        if (typeof trackName !== "string" || !event.lngLat) {
+          return;
+        }
+
+        if (!hoverPopupRef.current) {
+          hoverPopupRef.current = new maplibregl.Popup({
+            closeButton: false,
+            closeOnClick: false,
+            offset: 12,
+            className: "track-hover-popup"
+          });
+        }
+
+        hoverPopupRef.current.setLngLat(event.lngLat).setHTML(escapeHtml(trackName)).addTo(map);
+      });
       map.on("mouseleave", "tracks-lines", () => {
         map.getCanvas().style.cursor = selectionModeRef.current ? "crosshair" : "";
+        hoverPopupRef.current?.remove();
       });
       map.on("click", "tracks-lines", (event) => {
         const trackId = event.features?.[0]?.properties?.trackId;
@@ -273,16 +329,18 @@ export default function MapView({
       updateSource(map, TRACK_SOURCE_ID, trackDataRef.current);
       updateSource(map, ARROW_SOURCE_ID, arrowDataRef.current);
       updateSource(map, SELECTION_SOURCE_ID, selectionDataRef.current);
-      updateSource(map, HOVER_SOURCE_ID, hoverDataRef.current);
       setBasemapVisibility(map, basemapIdRef.current);
     });
 
     mapRef.current = map;
 
     return () => {
+      hoverPopupRef.current?.remove();
+      hoverPopupRef.current = null;
       map.remove();
       mapRef.current = null;
       loadedRef.current = false;
+      setHoverMarkerPosition(null);
     };
   }, []);
 
@@ -315,15 +373,6 @@ export default function MapView({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !loadedRef.current) {
-      return;
-    }
-
-    updateSource(map, HOVER_SOURCE_ID, hoverData);
-  }, [hoverData]);
-
-  useEffect(() => {
-    const map = mapRef.current;
     if (!map || !loadedRef.current || !map.getLayer("direction-arrows")) {
       return;
     }
@@ -342,6 +391,50 @@ export default function MapView({
 
   useEffect(() => {
     const map = mapRef.current;
+    if (!map || !loadedRef.current) {
+      return;
+    }
+
+    if (!hoveredPoint) {
+      return;
+    }
+
+    const updateHoverMarker = () => {
+      const projected = map.project([hoveredPoint.point.lon, hoveredPoint.point.lat]);
+      const canvas = map.getCanvas();
+      const padding = 24;
+      if (
+        projected.x < -padding ||
+        projected.y < -padding ||
+        projected.x > canvas.clientWidth + padding ||
+        projected.y > canvas.clientHeight + padding
+      ) {
+        setHoverMarkerPosition(null);
+        return;
+      }
+
+      setHoverMarkerPosition({ x: projected.x, y: projected.y });
+    };
+
+    const animationFrame = window.requestAnimationFrame(updateHoverMarker);
+    map.on("move", updateHoverMarker);
+    map.on("zoom", updateHoverMarker);
+    map.on("rotate", updateHoverMarker);
+    map.on("pitch", updateHoverMarker);
+    map.on("resize", updateHoverMarker);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      map.off("move", updateHoverMarker);
+      map.off("zoom", updateHoverMarker);
+      map.off("rotate", updateHoverMarker);
+      map.off("pitch", updateHoverMarker);
+      map.off("resize", updateHoverMarker);
+    };
+  }, [hoveredPoint]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     if (!map) {
       return;
     }
@@ -356,9 +449,14 @@ export default function MapView({
     }
   }, [selectionMode]);
 
-  const fitBounds = useCallback((bounds: Bounds) => {
+  const fitPoints = useCallback((points: TrackPoint[]) => {
     const map = mapRef.current;
     if (!map || !loadedRef.current) {
+      return;
+    }
+
+    const bounds = boundsFromPoints(points, map.getCenter().lng);
+    if (!bounds) {
       return;
     }
 
@@ -384,27 +482,31 @@ export default function MapView({
 
   useEffect(() => {
     const request = focusRequest;
-    if (!request) {
+    if (!request || lastFocusNonceRef.current === request.nonce) {
       return;
     }
 
+    const map = mapRef.current;
+    if (!map || !loadedRef.current) {
+      return;
+    }
+
+    lastFocusNonceRef.current = request.nonce;
+
     if (request.trackId === "__all__") {
       const visibleTracks = tracks.filter((track) => track.visible && (!filterBounds || track.matched));
-      const bounds = combineBounds(visibleTracks.map((track) => track.bounds));
-      if (bounds) {
-        fitBounds(bounds);
-      }
+      fitPoints(visibleTracks.flatMap((track) => track.displayPoints.length ? track.displayPoints : track.points));
       return;
     }
 
     const track = tracks.find((item) => item.id === request.trackId);
     if (track) {
-      fitBounds(track.bounds);
+      fitPoints(track.points);
     }
-  }, [filterBounds, fitBounds, focusRequest, tracks]);
+  }, [filterBounds, fitPoints, focusRequest, tracks]);
 
   useEffect(() => {
-    const container = containerRef.current;
+    const container = shellRef.current;
     const map = mapRef.current;
     if (!container || !map) {
       return;
@@ -484,7 +586,18 @@ export default function MapView({
   }, [onSelection, renderDragRect, selectionMode]);
 
   return (
-    <div className="map-shell" ref={containerRef}>
+    <div className="map-shell" ref={shellRef}>
+      <div className="map-container" ref={containerRef} />
+      {hoveredPoint && markerPosition ? (
+        <div
+          className="map-hover-marker"
+          style={{
+            left: markerPosition.x,
+            top: markerPosition.y
+          }}
+          title={hoveredPoint.trackName}
+        />
+      ) : null}
       <div className="drag-selection" ref={dragRectRef} />
     </div>
   );
@@ -511,6 +624,7 @@ function tracksToGeoJson(tracks: Track[], filterActive: boolean): GeoJsonData {
         type: "Feature" as const,
         properties: {
           trackId: track.id,
+          trackName: track.name,
           color: track.color,
           selected: track.selected
         },
@@ -528,26 +642,6 @@ function arrowsToGeoJson(tracks: Track[], filterActive: boolean): GeoJsonData {
     features: tracks
       .filter((track) => track.visible && (!filterActive || track.matched) && track.displayPoints.length >= 2)
       .flatMap((track) => directionArrowFeatures(track))
-  };
-}
-
-function pointToGeoJson(point: TrackPoint | null): GeoJsonData {
-  if (!point) {
-    return emptyFeatureCollection();
-  }
-
-  return {
-    type: "FeatureCollection" as const,
-    features: [
-      {
-        type: "Feature" as const,
-        properties: {},
-        geometry: {
-          type: "Point" as const,
-          coordinates: [point.lon, point.lat, point.ele ?? 0]
-        }
-      }
-    ]
   };
 }
 
@@ -655,18 +749,87 @@ function ensureArrowImage(map: Map) {
   map.addImage("direction-arrow", context.getImageData(0, 0, size, size), { sdf: true, pixelRatio: 2 });
 }
 
-function combineBounds(boundsList: Bounds[]) {
-  if (!boundsList.length) {
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function boundsFromPoints(points: TrackPoint[], referenceLng: number): Bounds | undefined {
+  const usablePoints = points.filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lon));
+  if (!usablePoints.length) {
     return undefined;
   }
 
-  return boundsList.reduce<Bounds>(
-    (combined, bounds) => ({
-      west: Math.min(combined.west, bounds.west),
-      south: Math.min(combined.south, bounds.south),
-      east: Math.max(combined.east, bounds.east),
-      north: Math.max(combined.north, bounds.north)
-    }),
-    boundsList[0]
-  );
+  let south = clampMapLat(usablePoints[0].lat);
+  let north = south;
+  const longitudes: number[] = [];
+
+  for (const point of usablePoints) {
+    const lat = clampMapLat(point.lat);
+    south = Math.min(south, lat);
+    north = Math.max(north, lat);
+    longitudes.push(normalizeLongitude360(point.lon));
+  }
+
+  const longitudeBounds = shortestLongitudeBounds(longitudes, referenceLng);
+
+  return {
+    west: longitudeBounds.west,
+    south,
+    east: longitudeBounds.east,
+    north
+  };
+}
+
+function shortestLongitudeBounds(longitudes: number[], referenceLng: number) {
+  if (longitudes.length === 1) {
+    const lng = closestLongitudeToReference(signedLongitude(longitudes[0]), referenceLng);
+    return { west: lng, east: lng };
+  }
+
+  const sorted = [...longitudes].sort((a, b) => a - b);
+  let largestGap = -1;
+  let gapIndex = 0;
+
+  for (let index = 0; index < sorted.length; index += 1) {
+    const current = sorted[index];
+    const next = index === sorted.length - 1 ? sorted[0] + 360 : sorted[index + 1];
+    const gap = next - current;
+    if (gap > largestGap) {
+      largestGap = gap;
+      gapIndex = index;
+    }
+  }
+
+  const westNormalized = sorted[(gapIndex + 1) % sorted.length];
+  const span = Math.max(0, 360 - largestGap);
+  const westBase = signedLongitude(westNormalized);
+  const eastBase = westBase + span;
+  const centerBase = westBase + span / 2;
+  const shift = Math.round((referenceLng - centerBase) / 360) * 360;
+
+  return {
+    west: westBase + shift,
+    east: eastBase + shift
+  };
+}
+
+function normalizeLongitude360(lng: number) {
+  return ((lng % 360) + 360) % 360;
+}
+
+function signedLongitude(lng: number) {
+  return lng > 180 ? lng - 360 : lng;
+}
+
+function closestLongitudeToReference(lng: number, referenceLng: number) {
+  return lng + Math.round((referenceLng - lng) / 360) * 360;
+}
+
+function clampMapLat(lat: number) {
+  return Math.max(-85.051129, Math.min(85.051129, lat));
 }

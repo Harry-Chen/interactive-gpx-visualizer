@@ -43,6 +43,20 @@ export function formatNumber(value?: number, unit = "", digits = 0) {
   return `${value.toFixed(digits)}${unit}`;
 }
 
+export function formatDateTime(date?: Date) {
+  if (!date || Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
+}
+
 function pad(value: number) {
   return value.toString().padStart(2, "0");
 }

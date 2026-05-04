@@ -1,5 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
-import type { FileKind, ParsedTrack, TrackPoint, UploadResult } from "../types";
+import type { FileKind, ImportProgress, ParsedTrack, TrackPoint, UploadResult } from "../types";
 import type { Language } from "./i18n";
 import { t } from "./i18n";
 import { calculateBounds } from "./geo";
@@ -66,17 +66,24 @@ const xmlParser = new XMLParser({
   parseTagValue: true
 });
 
-export async function parseFiles(files: File[], language: Language): Promise<UploadResult> {
+export async function parseFiles(
+  files: File[],
+  language: Language,
+  onProgress?: (progress: ImportProgress) => void
+): Promise<UploadResult> {
   const tracks: ParsedTrack[] = [];
   const errors: string[] = [];
 
-  for (const file of files) {
+  for (const [index, file] of files.entries()) {
+    onProgress?.({ done: index, total: files.length, fileName: file.name });
     try {
       const parsed = await parseFile(file, language);
       tracks.push(...parsed);
     } catch (error) {
       errors.push(`${file.name}: ${error instanceof Error ? error.message : "Unable to parse file"}`);
     }
+    onProgress?.({ done: index + 1, total: files.length, fileName: file.name });
+    await yieldToBrowser();
   }
 
   return { tracks, errors };
@@ -263,6 +270,10 @@ async function decompressGzip(file: File, language: Language) {
 
 function decodeText(source: ArrayBuffer) {
   return new TextDecoder("utf-8").decode(source);
+}
+
+function yieldToBrowser() {
+  return new Promise((resolve) => window.setTimeout(resolve, 0));
 }
 
 function toArray<T>(value: T | T[] | undefined): T[] {

@@ -13,12 +13,19 @@ This is a pure front-end GPX/FIT route visualizer intended for local use and Clo
 
 ## Architecture Notes
 
-- The map is implemented with MapLibre GL in globe projection using OSM raster tiles. Keep `src/lib/mapStyle.ts` as the central place for base map style changes.
+- The map is implemented with MapLibre GL in globe projection using raster base maps. Base map definitions live in `src/lib/basemaps.ts`; the MapLibre style assembly lives in `src/lib/mapStyle.ts`.
+- Map rendering lives in `src/components/MapView.tsx`. The MapLibre container is nested inside `.map-shell` so React-owned overlays such as the chart-hover marker and drag rectangle can sit above the canvas reliably.
+- Selected tracks are emphasized with dedicated MapLibre line layers (`tracks-selected-halo`, `tracks-selected-casing`, `tracks-selected-line`) instead of relying only on larger line width.
 - GPX and FIT inputs are normalized into the shared `Track` / `TrackPoint` model in `src/types.ts`.
 - GPX parsing lives in `src/lib/parsers.ts` via `fast-xml-parser`.
 - FIT parsing uses `@garmin/fitsdk` and is dynamically imported so the large FIT profile table is not part of the initial app chunk.
+- Drag/drop import, recursive folder traversal, and supported extension filtering live in `src/lib/fileDrop.ts`. Supported file extensions include `.gpx`, `.fit`, `.gpx.gz`, and `.fit.gz`.
 - Charts are split into `src/components/MetricsCharts.tsx` and lazy-loaded from `MetricsPanel`.
+- Chart hover state is shared across stacked charts and projected back onto the map as a React DOM overlay. Keep this overlay out of MapLibre symbol/circle layers unless the layering issue is intentionally revisited.
 - Spatial filtering uses a geohash candidate pass in `src/lib/geohash.ts`, then exact route/selection intersection checks in `src/lib/geo.ts`. Do not rely on geohash alone for correctness.
+- Map focus requests use a nonce and are consumed once in `MapView`; keep that behavior so old "focus all" requests do not replay after unrelated track state updates.
+- Focus bounds are calculated from track points using a shortest-longitude-arc helper to avoid jumps near the 0-degree meridian for antimeridian or wide-spanning tracks.
+- Build metadata is injected in `vite.config.ts` as `__APP_VERSION__` from `git describe --tags --always --dirty` and `__BUILD_DATE__` from the build timestamp. The brand bar displays this label so deployed builds are identifiable.
 
 ## Implementation Guidance
 

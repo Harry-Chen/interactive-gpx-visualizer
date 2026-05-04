@@ -7,8 +7,9 @@ import {
   XAxis,
   YAxis
 } from "recharts";
-import type { MetricKey, Track, TrackPoint } from "../types";
+import type { MapHoverPoint, MetricKey, Track, TrackPoint } from "../types";
 import { downsampleMetricPoints } from "../lib/simplify";
+import { formatDistance, formatDuration } from "../lib/format";
 import type { MetricLabelMap } from "./MetricsPanel";
 
 type MetricsChartsProps = {
@@ -16,7 +17,7 @@ type MetricsChartsProps = {
   availableMetrics: MetricKey[];
   metricLabels: MetricLabelMap;
   emptyText: string;
-  onHoverPoint: (point: TrackPoint | null) => void;
+  onHoverPoint: (point: MapHoverPoint | null) => void;
 };
 
 type ChartPoint = TrackPoint & {
@@ -36,7 +37,8 @@ export default function MetricsCharts({ track, availableMetrics, metricLabels, e
     const chartState = state as { activePayload?: Array<{ payload?: ChartPoint }> };
     const payload = chartState.activePayload?.[0]?.payload;
     if (payload) {
-      onHoverPoint(track.points[payload.pointIndex] ?? null);
+      const point = track.points[payload.pointIndex];
+      onHoverPoint(point ? { point, trackId: track.id, trackName: track.name } : null);
     }
   }
 
@@ -46,10 +48,11 @@ export default function MetricsCharts({ track, availableMetrics, metricLabels, e
         metricOrder.map((key) => (
           <div className="chart-block compact-chart" key={key}>
             <h3>{metricLabels[key].label}</h3>
-          <ResponsiveContainer width="100%" height="100%">
+            <div className="chart-canvas">
+              <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={chartData}
-                margin={{ left: -18, right: 14, top: 4, bottom: key === metricOrder.at(-1) ? 0 : -10 }}
+                margin={{ left: 4, right: 14, top: 4, bottom: 8 }}
                 syncId="track-metrics"
                 onMouseMove={handleMouseMove}
               >
@@ -63,8 +66,15 @@ export default function MetricsCharts({ track, availableMetrics, metricLabels, e
                 <YAxis width={46} tickFormatter={(value) => formatAxis(value, key)} />
                 <Tooltip
                   cursor={{ stroke: "#101820", strokeWidth: 1.5 }}
-                  formatter={(value) => formatTooltip(value, key, metricLabels)}
-                  labelFormatter={(value) => `${Number(value).toFixed(2)} km`}
+                  content={(props) => (
+                    <MetricTooltip
+                      active={props.active}
+                      payload={props.payload as unknown as ReadonlyArray<{ value?: unknown; payload?: ChartPoint }> | undefined}
+                      metricKey={key}
+                      metricLabels={metricLabels}
+                      track={track}
+                    />
+                  )}
                   isAnimationActive={false}
                 />
                 <Line
@@ -80,6 +90,7 @@ export default function MetricsCharts({ track, availableMetrics, metricLabels, e
                 />
             </LineChart>
           </ResponsiveContainer>
+            </div>
         </div>
         ))
       ) : (
@@ -93,6 +104,64 @@ function formatTooltip(value: unknown, key: MetricKey, metricLabels: MetricLabel
   const meta = metricLabels[key];
   const number = typeof value === "number" ? value : Number(value);
   return [`${number.toFixed(key === "speed" ? 1 : 0)} ${meta.unit}`, meta.label];
+}
+
+type TooltipProps = {
+  active?: boolean;
+  payload?: ReadonlyArray<{ value?: unknown; payload?: ChartPoint }>;
+  metricKey: MetricKey;
+  metricLabels: MetricLabelMap;
+  track: Track;
+};
+
+function MetricTooltip({ active, payload, metricKey, metricLabels, track }: TooltipProps) {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  const point = payload[0].payload;
+  if (!point) {
+    return null;
+  }
+
+  const elapsedSeconds = elapsedFromStart(track.points, point.pointIndex);
+  const movingSeconds = movingFromStart(track.points, point.pointIndex);
+  const [value, label] = formatTooltip(payload[0].value, metricKey, metricLabels);
+
+  return (
+    <div className="chart-tooltip">
+      <strong>{label}</strong>
+      <span>{value}</span>
+      <span>{formatDistance(point.distance)}</span>
+      <span>Elapsed {formatDuration(elapsedSeconds)}</span>
+      <span>Moving {formatDuration(movingSeconds)}</span>
+    </div>
+  );
+}
+
+function elapsedFromStart(points: TrackPoint[], pointIndex: number) {
+  const start = points.find((point) => point.time)?.time;
+  const current = points[pointIndex]?.time;
+  return start && current ? Math.max(0, (current.getTime() - start.getTime()) / 1000) : undefined;
+}
+
+function movingFromStart(points: TrackPoint[], pointIndex: number) {
+  let movingSeconds = 0;
+
+  for (let index = 1; index <= pointIndex; index += 1) {
+    const previous = points[index - 1];
+    const point = points[index];
+    if (!previous?.time || !point?.time) {
+      continue;
+    }
+
+    const deltaSeconds = (point.time.getTime() - previous.time.getTime()) / 1000;
+    if (deltaSeconds > 0 && (point.speed ?? 0) >= 0.6) {
+      movingSeconds += deltaSeconds;
+    }
+  }
+
+  return movingSeconds || undefined;
 }
 
 function formatAxis(value: unknown, key: MetricKey) {

@@ -27,6 +27,8 @@ export type MetricKey = keyof Pick<
 
 export type TrackStats = {
   distance: number;
+  startTime?: Date;
+  endTime?: Date;
   duration?: number;
   movingTime?: number;
   elevationGain: number;
@@ -65,4 +67,16 @@ export type ParsedTrack = Omit<
 export type UploadResult = {
   tracks: ParsedTrack[];
   errors: string[];
+};
+
+export type ImportProgress = {
+  done: number;
+  total: number;
+  fileName?: string;
+};
+
+export type MapHoverPoint = {
+  point: TrackPoint;
+  trackId: string;
+  trackName: string;
 };

@@ -75,6 +75,8 @@ export function calculateTrackStats(points: TrackPoint[]): TrackStats {
 
   return {
     distance,
+    startTime: firstTime,
+    endTime: lastTime,
     duration,
     movingTime: movingTime || undefined,
     elevationGain,

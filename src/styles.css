@@ -60,6 +60,32 @@ button {
   background: #c7dde5;
 }
 
+.map-container {
+  position: absolute;
+  inset: 0;
+}
+
+.map-hover-marker {
+  position: absolute;
+  z-index: 7;
+  width: 22px;
+  height: 22px;
+  border: 4px solid #ffffff;
+  border-radius: 50%;
+  background: #101820;
+  box-shadow: 0 0 0 3px rgba(16, 24, 32, 0.34), 0 14px 30px rgba(15, 23, 42, 0.34);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.map-hover-marker::after {
+  position: absolute;
+  inset: -8px;
+  border: 2px solid rgba(16, 24, 32, 0.32);
+  border-radius: inherit;
+  content: "";
+}
+
 .maplibregl-map {
   font-family: inherit;
 }
@@ -95,6 +121,14 @@ button {
   margin-top: 2px;
   color: var(--ink);
   font-size: 1.02rem;
+}
+
+.brand-bar small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
 }
 
 .track-panel {
@@ -230,6 +264,14 @@ button {
   gap: 10px;
 }
 
+.track-select-checkbox {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  margin: 2px 0 0;
+  accent-color: var(--accent);
+}
+
 .track-color-dot {
   width: 11px;
   height: 36px;
@@ -262,6 +304,58 @@ button {
   display: grid;
   grid-template-columns: repeat(4, 34px);
   gap: 8px;
+}
+
+.track-bulk-toolbar,
+.track-sort-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.track-bulk-toolbar {
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.track-bulk-toolbar button,
+.track-sort-toolbar select {
+  min-height: 30px;
+  border: 1px solid rgba(25, 42, 38, 0.13);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.track-bulk-toolbar button {
+  padding: 0 9px;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.track-bulk-toolbar button:disabled {
+  cursor: not-allowed;
+  color: rgba(100, 112, 108, 0.58);
+}
+
+.track-sort-toolbar label {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.track-sort-toolbar select {
+  min-width: 0;
+  padding: 0 6px;
+}
+
+.track-sort-toolbar label select {
+  flex: 1;
 }
 
 .track-actions button,
@@ -555,9 +649,15 @@ button {
 }
 
 .compact-chart {
-  min-height: 118px;
+  min-height: 142px;
   padding-top: 8px;
   flex: 0 0 auto;
+}
+
+.chart-canvas {
+  height: calc(100% - 22px);
+  min-height: 104px;
+  overflow: hidden;
 }
 
 .chart-block h3 {
@@ -569,6 +669,32 @@ button {
 .recharts-wrapper,
 .recharts-surface {
   font-size: 0.72rem;
+}
+
+.chart-tooltip {
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid rgba(25, 42, 38, 0.14);
+  border-radius: 8px;
+  background: rgba(250, 251, 247, 0.96);
+  color: var(--ink);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+  font-size: 0.75rem;
+}
+
+.chart-tooltip strong {
+  font-size: 0.78rem;
+}
+
+.track-hover-popup .maplibregl-popup-content {
+  padding: 6px 9px;
+  border: 1px solid rgba(25, 42, 38, 0.16);
+  border-radius: 8px;
+  background: rgba(250, 251, 247, 0.96);
+  color: var(--ink);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+  font: 700 0.78rem/1.2 inherit;
 }
 
 .drag-selection {

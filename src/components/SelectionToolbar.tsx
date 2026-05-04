@@ -81,8 +81,8 @@ export default function SelectionToolbar({
       <label className="toolbar-field compact-field">
         <span>{t(language, "language")}</span>
         <select value={language} onChange={(event) => onLanguageChange(event.target.value as Language)}>
-          <option value="zh">中文</option>
-          <option value="en">English</option>
+          <option value="zh">中文 / Chinese</option>
+          <option value="en">English / 英语</option>
         </select>
       </label>
     </div>

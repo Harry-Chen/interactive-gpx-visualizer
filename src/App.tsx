@@ -3,6 +3,7 @@ import MapView from "./components/MapView";
 import MetricsPanel from "./components/MetricsPanel";
 import SelectionToolbar from "./components/SelectionToolbar";
 import TrackPanel from "./components/TrackPanel";
+import type { SortDirection, TrackSortKey } from "./components/TrackPanel";
 import { boundsIntersect, routeIntersectsBounds } from "./lib/geo";
 import { buildTrackGeohashes, filterCandidateTracks } from "./lib/geohash";
 import { parseFiles } from "./lib/parsers";
@@ -11,9 +12,10 @@ import { DEFAULT_BASEMAP_ID, type BasemapId } from "./lib/basemaps";
 import { filesFromDataTransfer, isSupportedFile } from "./lib/fileDrop";
 import type { Language } from "./lib/i18n";
 import { t } from "./lib/i18n";
-import type { Bounds, ParsedTrack, Track, TrackPoint } from "./types";
+import type { Bounds, ImportProgress, MapHoverPoint, ParsedTrack, Track } from "./types";
 
 const DEFAULT_COLORS = ["#d94848", "#2c7a7b", "#b45309", "#345995", "#7c3aed", "#0f766e", "#c026d3", "#2563eb"];
+const BUILD_LABEL = `${__APP_VERSION__} · ${formatBuildDate(__BUILD_DATE__)}`;
 
 type FocusRequest = {
   trackId: string;
@@ -30,13 +32,18 @@ export default function App() {
   const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null);
   const [basemapId, setBasemapId] = useState<BasemapId>(DEFAULT_BASEMAP_ID);
   const [showDirectionArrows, setShowDirectionArrows] = useState(false);
-  const [hoveredPoint, setHoveredPoint] = useState<TrackPoint | null>(null);
+  const [hoveredPoint, setHoveredPoint] = useState<MapHoverPoint | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [language, setLanguage] = useState<Language>("zh");
   const [metricsHeight, setMetricsHeight] = useState(380);
+  const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
+  const [checkedTrackIds, setCheckedTrackIds] = useState<Set<string>>(new Set());
+  const [sortKey, setSortKey] = useState<TrackSortKey>("date");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   const selectedTrack = tracks.find((track) => track.selected);
   const matchedCount = tracks.filter((track) => track.matched).length;
+  const sortedTracks = sortTracks(tracks, sortKey, sortDirection);
 
   async function handleFiles(files: File[]) {
     const supportedFiles = files.filter(isSupportedFile);
@@ -46,8 +53,9 @@ export default function App() {
     }
 
     setImporting(true);
+    setImportProgress({ done: 0, total: supportedFiles.length });
     try {
-      const result = await parseFiles(supportedFiles, language);
+      const result = await parseFiles(supportedFiles, language, setImportProgress);
       setErrors(result.errors);
 
       if (result.tracks.length) {
@@ -63,6 +71,7 @@ export default function App() {
       }
     } finally {
       setImporting(false);
+      setImportProgress(null);
     }
   }
 
@@ -93,6 +102,7 @@ export default function App() {
   }
 
   function handleRemove(trackId: string) {
+    setCheckedTrackIds((current) => withoutIds(current, new Set([trackId])));
     setTracks((current) => {
       const removedSelected = current.find((track) => track.id === trackId)?.selected;
       const next = current.filter((track) => track.id !== trackId);
@@ -103,6 +113,37 @@ export default function App() {
 
       return next;
     });
+  }
+
+  function handleCheck(trackId: string, checked: boolean) {
+    setCheckedTrackIds((current) => {
+      const next = new Set(current);
+      if (checked) {
+        next.add(trackId);
+      } else {
+        next.delete(trackId);
+      }
+      return next;
+    });
+  }
+
+  function handleRemoveChecked() {
+    setTracks((current) => {
+      const next = current.filter((track) => !checkedTrackIds.has(track.id));
+      const hasSelection = next.some((track) => track.selected);
+      if (!hasSelection && next.length) {
+        return next.map((track, index) => ({ ...track, selected: index === 0 }));
+      }
+      return next;
+    });
+    setCheckedTrackIds(new Set());
+  }
+
+  function handleClearAll() {
+    setTracks([]);
+    setCheckedTrackIds(new Set());
+    setFilterBounds(null);
+    setHoveredPoint(null);
   }
 
   function handleFocus(trackId: string) {
@@ -157,6 +198,7 @@ export default function App() {
         <div>
           <span>{t(language, "appSubtitle")}</span>
           <strong>{t(language, "appTitle")}</strong>
+          <small>{BUILD_LABEL}</small>
         </div>
       </div>
 
@@ -183,19 +225,28 @@ export default function App() {
       />
 
       <TrackPanel
-        tracks={tracks}
+        tracks={sortedTracks}
         selectedTrackId={selectedTrack?.id}
+        checkedTrackIds={checkedTrackIds}
         importing={importing}
         filterActive={Boolean(filterBounds)}
         matchedCount={matchedCount}
         errors={errors}
         language={language}
+        importProgress={importProgress}
+        sortKey={sortKey}
+        sortDirection={sortDirection}
         onFiles={handleFiles}
         onSelect={handleSelect}
+        onCheck={handleCheck}
         onToggleVisible={handleToggleVisible}
         onColorChange={handleColorChange}
         onRemove={handleRemove}
         onFocus={handleFocus}
+        onRemoveChecked={handleRemoveChecked}
+        onClearAll={handleClearAll}
+        onSortChange={setSortKey}
+        onSortDirectionChange={setSortDirection}
       />
 
       <MetricsPanel
@@ -255,4 +306,46 @@ function ensureSelection(tracks: Track[]) {
     ...track,
     selected: track.id === firstMatched.id
   }));
+}
+
+function sortTracks(tracks: Track[], sortKey: TrackSortKey, direction: SortDirection) {
+  const sign = direction === "asc" ? 1 : -1;
+
+  return [...tracks].sort((a, b) => {
+    const result = compareTracks(a, b, sortKey);
+    return result * sign || a.name.localeCompare(b.name);
+  });
+}
+
+function formatBuildDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toISOString().slice(0, 16).replace("T", " ");
+}
+
+function compareTracks(a: Track, b: Track, sortKey: TrackSortKey) {
+  if (sortKey === "distance") {
+    return a.stats.distance - b.stats.distance;
+  }
+
+  if (sortKey === "movingTime") {
+    return (a.stats.movingTime ?? a.stats.duration ?? 0) - (b.stats.movingTime ?? b.stats.duration ?? 0);
+  }
+
+  if (sortKey === "date") {
+    return (a.stats.startTime?.getTime() ?? 0) - (b.stats.startTime?.getTime() ?? 0);
+  }
+
+  return a.name.localeCompare(b.name);
+}
+
+function withoutIds(ids: Set<string>, removeIds: Set<string>) {
+  const next = new Set(ids);
+  for (const id of removeIds) {
+    next.delete(id);
+  }
+  return next;
 }
