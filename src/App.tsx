@@ -6,7 +6,10 @@ import TrackPanel from "./components/TrackPanel";
 import { boundsIntersect, routeIntersectsBounds } from "./lib/geo";
 import { buildTrackGeohashes, filterCandidateTracks } from "./lib/geohash";
 import { parseFiles } from "./lib/parsers";
-import type { Bounds, ParsedTrack, Track } from "./types";
+import { simplifyTrackPoints } from "./lib/simplify";
+import { DEFAULT_BASEMAP_ID, type BasemapId } from "./lib/basemaps";
+import { filesFromDataTransfer, isSupportedFile } from "./lib/fileDrop";
+import type { Bounds, ParsedTrack, Track, TrackPoint } from "./types";
 
 const DEFAULT_COLORS = ["#d94848", "#2c7a7b", "#b45309", "#345995", "#7c3aed", "#0f766e", "#c026d3", "#2563eb"];
 
@@ -23,14 +26,24 @@ export default function App() {
   const [importing, setImporting] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null);
+  const [basemapId, setBasemapId] = useState<BasemapId>(DEFAULT_BASEMAP_ID);
+  const [showDirectionArrows, setShowDirectionArrows] = useState(false);
+  const [hoveredPoint, setHoveredPoint] = useState<TrackPoint | null>(null);
+  const [dragActive, setDragActive] = useState(false);
 
   const selectedTrack = tracks.find((track) => track.selected);
   const matchedCount = tracks.filter((track) => track.matched).length;
 
   async function handleFiles(files: File[]) {
+    const supportedFiles = files.filter(isSupportedFile);
+    if (!supportedFiles.length) {
+      setErrors(["没有找到支持的 .gpx 或 .fit 文件"]);
+      return;
+    }
+
     setImporting(true);
     try {
-      const result = await parseFiles(files);
+      const result = await parseFiles(supportedFiles);
       setErrors(result.errors);
 
       if (result.tracks.length) {
@@ -46,6 +59,13 @@ export default function App() {
     } finally {
       setImporting(false);
     }
+  }
+
+  async function handleDrop(event: React.DragEvent<HTMLElement>) {
+    event.preventDefault();
+    setDragActive(false);
+    const files = await filesFromDataTransfer(event.dataTransfer);
+    await handleFiles(files);
   }
 
   function handleSelect(trackId: string) {
@@ -98,15 +118,36 @@ export default function App() {
   }
 
   return (
-    <main className="app-shell">
+    <main
+      className={`app-shell ${dragActive ? "drag-active" : ""}`}
+      onDragEnter={(event) => {
+        event.preventDefault();
+        setDragActive(true);
+      }}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "copy";
+      }}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setDragActive(false);
+        }
+      }}
+      onDrop={handleDrop}
+    >
       <MapView
         tracks={tracks}
         filterBounds={filterBounds}
         selectionMode={selectionMode}
         selectionResetToken={selectionResetToken}
         focusRequest={focusRequest}
+        basemapId={basemapId}
+        showDirectionArrows={showDirectionArrows}
+        hoveredPoint={hoveredPoint}
         onSelection={handleSelection}
         onTrackSelect={handleSelect}
+        onBasemapChange={setBasemapId}
+        onDirectionArrowsChange={setShowDirectionArrows}
       />
 
       <div className="brand-bar">
@@ -147,7 +188,11 @@ export default function App() {
         onFocus={handleFocus}
       />
 
-      <MetricsPanel track={selectedTrack} />
+      <MetricsPanel track={selectedTrack} onHoverPoint={setHoveredPoint} />
+      <div className="drop-overlay">
+        <strong>拖拽导入 GPX / FIT</strong>
+        <span>支持文件夹递归导入，会自动忽略其他格式</span>
+      </div>
     </main>
   );
 }
@@ -160,6 +205,7 @@ function hydrateTrack(track: ParsedTrack, index: number, selected: boolean): Tra
     visible: true,
     selected,
     matched: true,
+    displayPoints: simplifyTrackPoints(track.points),
     geohashes: buildTrackGeohashes(track.points)
   };
 }

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import maplibregl, { type GeoJSONSource, type LngLatBoundsLike, type Map } from "maplibre-gl";
-import type { Bounds, Track } from "../types";
+import type { Bounds, Track, TrackPoint } from "../types";
 import { mapStyle } from "../lib/mapStyle";
+import { BASEMAPS, type BasemapId } from "../lib/basemaps";
 
 type FocusRequest = {
   trackId: string;
@@ -14,12 +15,21 @@ type MapViewProps = {
   selectionMode: boolean;
   selectionResetToken: number;
   focusRequest: FocusRequest | null;
+  basemapId: BasemapId;
+  showDirectionArrows: boolean;
+  hoveredPoint: TrackPoint | null;
   onSelection: (bounds: Bounds) => void;
   onTrackSelect: (trackId: string) => void;
+  onBasemapChange: (basemapId: BasemapId) => void;
+  onDirectionArrowsChange: (enabled: boolean) => void;
 };
 
 const TRACK_SOURCE_ID = "tracks";
 const SELECTION_SOURCE_ID = "selection-bounds";
+const ARROW_SOURCE_ID = "direction-arrows";
+const HOVER_SOURCE_ID = "hover-point";
+
+type GeoJsonData = Parameters<GeoJSONSource["setData"]>[0];
 
 export default function MapView({
   tracks,
@@ -27,8 +37,13 @@ export default function MapView({
   selectionMode,
   selectionResetToken,
   focusRequest,
+  basemapId,
+  showDirectionArrows,
+  hoveredPoint,
   onSelection,
-  onTrackSelect
+  onTrackSelect,
+  onBasemapChange,
+  onDirectionArrowsChange
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
@@ -39,9 +54,15 @@ export default function MapView({
   const dragRectRef = useRef<HTMLDivElement | null>(null);
 
   const trackData = useMemo(() => tracksToGeoJson(tracks, Boolean(filterBounds)), [tracks, filterBounds]);
+  const arrowData = useMemo(() => arrowsToGeoJson(tracks, Boolean(filterBounds)), [tracks, filterBounds]);
   const selectionData = useMemo(() => boundsToGeoJson(filterBounds), [filterBounds]);
+  const hoverData = useMemo(() => pointToGeoJson(hoveredPoint), [hoveredPoint]);
   const trackDataRef = useRef(trackData);
+  const arrowDataRef = useRef(arrowData);
   const selectionDataRef = useRef(selectionData);
+  const hoverDataRef = useRef(hoverData);
+  const basemapIdRef = useRef(basemapId);
+  const showDirectionArrowsRef = useRef(showDirectionArrows);
 
   const renderDragRect = useCallback((rect: null | { left: number; top: number; width: number; height: number }) => {
     const element = dragRectRef.current;
@@ -70,8 +91,24 @@ export default function MapView({
   }, [trackData]);
 
   useEffect(() => {
+    arrowDataRef.current = arrowData;
+  }, [arrowData]);
+
+  useEffect(() => {
     selectionDataRef.current = selectionData;
   }, [selectionData]);
+
+  useEffect(() => {
+    hoverDataRef.current = hoverData;
+  }, [hoverData]);
+
+  useEffect(() => {
+    basemapIdRef.current = basemapId;
+  }, [basemapId]);
+
+  useEffect(() => {
+    showDirectionArrowsRef.current = showDirectionArrows;
+  }, [showDirectionArrows]);
 
   useEffect(() => {
     selectionModeRef.current = selectionMode;
@@ -125,6 +162,14 @@ export default function MapView({
         type: "geojson",
         data: emptyFeatureCollection()
       });
+      map.addSource(ARROW_SOURCE_ID, {
+        type: "geojson",
+        data: emptyFeatureCollection()
+      });
+      map.addSource(HOVER_SOURCE_ID, {
+        type: "geojson",
+        data: emptyFeatureCollection()
+      });
 
       map.addLayer({
         id: "selection-fill",
@@ -173,6 +218,48 @@ export default function MapView({
           "line-opacity": ["case", ["boolean", ["get", "selected"], false], 1, 0.88]
         }
       });
+      ensureArrowImage(map);
+      map.addLayer({
+        id: "direction-arrows",
+        type: "symbol",
+        source: ARROW_SOURCE_ID,
+        layout: {
+          "icon-image": "direction-arrow",
+          "icon-size": ["interpolate", ["linear"], ["zoom"], 2, 0.34, 10, 0.62],
+          "icon-rotate": ["get", "bearing"],
+          "icon-rotation-alignment": "map",
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
+          visibility: showDirectionArrowsRef.current ? "visible" : "none"
+        },
+        paint: {
+          "icon-color": ["coalesce", ["get", "color"], "#d94848"],
+          "icon-halo-color": "#ffffff",
+          "icon-halo-width": 1.4,
+          "icon-opacity": 0.92
+        }
+      });
+      map.addLayer({
+        id: "hover-point-halo",
+        type: "circle",
+        source: HOVER_SOURCE_ID,
+        paint: {
+          "circle-radius": 9,
+          "circle-color": "#ffffff",
+          "circle-opacity": 0.86
+        }
+      });
+      map.addLayer({
+        id: "hover-point-dot",
+        type: "circle",
+        source: HOVER_SOURCE_ID,
+        paint: {
+          "circle-radius": 5,
+          "circle-color": "#101820",
+          "circle-stroke-width": 2,
+          "circle-stroke-color": "#ffffff"
+        }
+      });
 
       map.on("mouseenter", "tracks-lines", () => {
         map.getCanvas().style.cursor = "pointer";
@@ -188,7 +275,10 @@ export default function MapView({
       });
 
       updateSource(map, TRACK_SOURCE_ID, trackDataRef.current);
+      updateSource(map, ARROW_SOURCE_ID, arrowDataRef.current);
       updateSource(map, SELECTION_SOURCE_ID, selectionDataRef.current);
+      updateSource(map, HOVER_SOURCE_ID, hoverDataRef.current);
+      setBasemapVisibility(map, basemapIdRef.current);
     });
 
     mapRef.current = map;
@@ -206,8 +296,44 @@ export default function MapView({
       return;
     }
 
+    setBasemapVisibility(map, basemapId);
+  }, [basemapId]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loadedRef.current) {
+      return;
+    }
+
     updateSource(map, TRACK_SOURCE_ID, trackData);
   }, [trackData]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loadedRef.current) {
+      return;
+    }
+
+    updateSource(map, ARROW_SOURCE_ID, arrowData);
+  }, [arrowData]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loadedRef.current) {
+      return;
+    }
+
+    updateSource(map, HOVER_SOURCE_ID, hoverData);
+  }, [hoverData]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loadedRef.current || !map.getLayer("direction-arrows")) {
+      return;
+    }
+
+    map.setLayoutProperty("direction-arrows", "visibility", showDirectionArrows ? "visible" : "none");
+  }, [showDirectionArrows]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -364,24 +490,44 @@ export default function MapView({
 
   return (
     <div className="map-shell" ref={containerRef}>
+      <div className="map-layer-control">
+        <label>
+          <span>底图</span>
+          <select value={basemapId} onChange={(event) => onBasemapChange(event.target.value as BasemapId)}>
+            {BASEMAPS.map((basemap) => (
+              <option key={basemap.id} value={basemap.id}>
+                {basemap.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="inline-toggle">
+          <input
+            type="checkbox"
+            checked={showDirectionArrows}
+            onChange={(event) => onDirectionArrowsChange(event.target.checked)}
+          />
+          <span>方向箭头</span>
+        </label>
+      </div>
       <div className="drag-selection" ref={dragRectRef} />
     </div>
   );
 }
 
-function updateSource(map: Map, sourceId: string, data: ReturnType<typeof emptyFeatureCollection> | ReturnType<typeof tracksToGeoJson> | ReturnType<typeof boundsToGeoJson>) {
+function updateSource(map: Map, sourceId: string, data: GeoJsonData) {
   const source = map.getSource(sourceId) as GeoJSONSource | undefined;
   source?.setData(data);
 }
 
-function emptyFeatureCollection() {
+function emptyFeatureCollection(): GeoJsonData {
   return {
     type: "FeatureCollection" as const,
     features: []
   };
 }
 
-function tracksToGeoJson(tracks: Track[], filterActive: boolean) {
+function tracksToGeoJson(tracks: Track[], filterActive: boolean): GeoJsonData {
   return {
     type: "FeatureCollection" as const,
     features: tracks
@@ -395,13 +541,42 @@ function tracksToGeoJson(tracks: Track[], filterActive: boolean) {
         },
         geometry: {
           type: "LineString" as const,
-          coordinates: track.points.map((point) => [point.lon, point.lat, point.ele ?? 0])
+          coordinates: track.displayPoints.map((point) => [point.lon, point.lat, point.ele ?? 0])
         }
       }))
   };
 }
 
-function boundsToGeoJson(bounds: Bounds | null) {
+function arrowsToGeoJson(tracks: Track[], filterActive: boolean): GeoJsonData {
+  return {
+    type: "FeatureCollection" as const,
+    features: tracks
+      .filter((track) => track.visible && (!filterActive || track.matched) && track.displayPoints.length >= 2)
+      .flatMap((track) => directionArrowFeatures(track))
+  };
+}
+
+function pointToGeoJson(point: TrackPoint | null): GeoJsonData {
+  if (!point) {
+    return emptyFeatureCollection();
+  }
+
+  return {
+    type: "FeatureCollection" as const,
+    features: [
+      {
+        type: "Feature" as const,
+        properties: {},
+        geometry: {
+          type: "Point" as const,
+          coordinates: [point.lon, point.lat, point.ele ?? 0]
+        }
+      }
+    ]
+  };
+}
+
+function boundsToGeoJson(bounds: Bounds | null): GeoJsonData {
   if (!bounds) {
     return emptyFeatureCollection();
   }
@@ -427,4 +602,80 @@ function boundsToGeoJson(bounds: Bounds | null) {
       }
     ]
   };
+}
+
+function directionArrowFeatures(track: Track) {
+  const spacing = Math.max(15, Math.floor(track.displayPoints.length / 24));
+  const features = [];
+
+  for (let index = spacing; index < track.displayPoints.length - 1; index += spacing) {
+    const previous = track.displayPoints[index - 1];
+    const point = track.displayPoints[index];
+    const next = track.displayPoints[index + 1];
+
+    features.push({
+      type: "Feature" as const,
+      properties: {
+        trackId: track.id,
+        color: track.color,
+        bearing: calculateBearing(previous, next)
+      },
+      geometry: {
+        type: "Point" as const,
+        coordinates: [point.lon, point.lat, point.ele ?? 0]
+      }
+    });
+  }
+
+  return features;
+}
+
+function calculateBearing(a: TrackPoint, b: TrackPoint) {
+  const lat1 = (a.lat * Math.PI) / 180;
+  const lat2 = (b.lat * Math.PI) / 180;
+  const deltaLon = ((b.lon - a.lon) * Math.PI) / 180;
+  const y = Math.sin(deltaLon) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLon);
+
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
+function setBasemapVisibility(map: Map, basemapId: BasemapId) {
+  const basemap = BASEMAPS.find((item) => item.id === basemapId) ?? BASEMAPS[0];
+  map.setPaintProperty("earth-water", "background-color", basemap.background);
+
+  for (const item of BASEMAPS) {
+    const layerId = `basemap-${item.id}`;
+    if (map.getLayer(layerId)) {
+      map.setLayoutProperty(layerId, "visibility", item.id === basemap.id ? "visible" : "none");
+    }
+  }
+}
+
+function ensureArrowImage(map: Map) {
+  if (map.hasImage("direction-arrow")) {
+    return;
+  }
+
+  const size = 48;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return;
+  }
+
+  context.fillStyle = "#ffffff";
+  context.beginPath();
+  context.moveTo(24, 5);
+  context.lineTo(39, 39);
+  context.lineTo(24, 31);
+  context.lineTo(9, 39);
+  context.closePath();
+  context.fill();
+  context.strokeStyle = "#0f172a";
+  context.lineWidth = 3;
+  context.stroke();
+  map.addImage("direction-arrow", context.getImageData(0, 0, size, size), { sdf: true, pixelRatio: 2 });
 }

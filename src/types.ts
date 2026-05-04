@@ -51,6 +51,7 @@ export type Track = {
   selected: boolean;
   matched: boolean;
   points: TrackPoint[];
+  displayPoints: TrackPoint[];
   bounds: Bounds;
   stats: TrackStats;
   geohashes: Set<string>;
@@ -58,7 +59,7 @@ export type Track = {
 
 export type ParsedTrack = Omit<
   Track,
-  "id" | "color" | "visible" | "selected" | "matched" | "geohashes"
+  "id" | "color" | "visible" | "selected" | "matched" | "displayPoints" | "geohashes"
 >;
 
 export type UploadResult = {

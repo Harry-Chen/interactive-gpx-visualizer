@@ -1,19 +1,23 @@
-import type { StyleSpecification } from "maplibre-gl";
+import type { LayerSpecification, StyleSpecification } from "maplibre-gl";
+import { BASEMAPS, DEFAULT_BASEMAP_ID } from "./basemaps";
 
 export const mapStyle: StyleSpecification = {
   version: 8,
   projection: {
     type: "globe"
   },
-  sources: {
-    osm: {
-      type: "raster",
-      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-      tileSize: 256,
-      maxzoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }
-  },
+  sources: Object.fromEntries(
+    BASEMAPS.map((basemap) => [
+      basemap.id,
+      {
+        type: "raster",
+        tiles: basemap.tiles,
+        tileSize: 256,
+        maxzoom: basemap.maxzoom,
+        attribution: basemap.attribution
+      }
+    ])
+  ) as StyleSpecification["sources"],
   layers: [
     {
       id: "earth-water",
@@ -22,16 +26,19 @@ export const mapStyle: StyleSpecification = {
         "background-color": "#c7dde5"
       }
     },
-    {
-      id: "osm-raster",
-      type: "raster",
-      source: "osm",
+    ...BASEMAPS.map<LayerSpecification>((basemap) => ({
+      id: `basemap-${basemap.id}`,
+      type: "raster" as const,
+      source: basemap.id,
+      layout: {
+        visibility: basemap.id === DEFAULT_BASEMAP_ID ? "visible" : "none"
+      },
       paint: {
-        "raster-saturation": -0.18,
-        "raster-contrast": 0.08,
-        "raster-brightness-min": 0.08,
-        "raster-brightness-max": 0.96
+        "raster-saturation": basemap.paint?.saturation ?? 0,
+        "raster-contrast": basemap.paint?.contrast ?? 0,
+        "raster-brightness-min": basemap.paint?.brightnessMin ?? 0,
+        "raster-brightness-max": basemap.paint?.brightnessMax ?? 1
       }
-    }
+    }))
   ]
 };

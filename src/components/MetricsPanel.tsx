@@ -1,10 +1,11 @@
 import { lazy, Suspense } from "react";
-import type { MetricKey, Track } from "../types";
+import type { MetricKey, Track, TrackPoint } from "../types";
 import { formatDistance, formatDuration, formatNumber, formatSpeed } from "../lib/format";
 import { numbers } from "../lib/stats";
 
 type MetricsPanelProps = {
   track?: Track;
+  onHoverPoint: (point: TrackPoint | null) => void;
 };
 
 const metricLabels: Record<MetricKey, { label: string; unit: string; color: string }> = {
@@ -18,7 +19,7 @@ const metricLabels: Record<MetricKey, { label: string; unit: string; color: stri
 
 const MetricsCharts = lazy(() => import("./MetricsCharts"));
 
-export default function MetricsPanel({ track }: MetricsPanelProps) {
+export default function MetricsPanel({ track, onHoverPoint }: MetricsPanelProps) {
   if (!track) {
     return (
       <section className="metrics-panel idle">
@@ -52,7 +53,12 @@ export default function MetricsPanel({ track }: MetricsPanelProps) {
       </div>
 
       <Suspense fallback={<div className="chart-grid loading-chart">正在加载图表...</div>}>
-        <MetricsCharts track={track} availableMetrics={availableMetrics} metricLabels={metricLabels} />
+        <MetricsCharts
+          track={track}
+          availableMetrics={availableMetrics}
+          metricLabels={metricLabels}
+          onHoverPoint={onHoverPoint}
+        />
       </Suspense>
     </section>
   );
