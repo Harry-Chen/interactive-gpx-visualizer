@@ -65,7 +65,7 @@ jobs:
       - name: Download build artifact
         uses: actions/download-artifact@v8
         with:
-          name: dist
+          name: release-build
           path: dist
 
       - name: Deploy to Cloudflare Pages
