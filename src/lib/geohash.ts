@@ -2,8 +2,8 @@ import type { Bounds, Track, TrackPoint } from "../types";
 import { haversineDistance } from "./geo";
 
 const BASE32 = "0123456789bcdefghjkmnpqrstuvwxyz";
-const INDEX_PRECISION = 4;
-const MAX_QUERY_HASHES = 1500;
+export const INDEX_PRECISION = 5;
+export const MAX_QUERY_HASHES = 5000;
 
 const CELL_SIZE_METERS_BY_PRECISION: Record<number, number> = {
   1: 5000000,
@@ -81,18 +81,35 @@ export function buildTrackGeohashes(points: TrackPoint[]) {
 
 export function filterCandidateTracks(tracks: Track[], bounds: Bounds) {
   const queryHashes = geohashesForBounds(bounds);
-  if (!queryHashes.size) {
-    return tracks;
-  }
+  const fallback = !queryHashes.size;
+  const candidates = fallback ? tracks : tracks.filter((track) => setIntersects(track.geohashes, queryHashes));
 
-  return tracks.filter((track) => setIntersects(track.geohashes, queryHashes));
+  return {
+    candidates,
+    fallback,
+    queryHashCount: queryHashes.size,
+    trackCount: tracks.length
+  };
+}
+
+export type GeohashCandidateResult = ReturnType<typeof filterCandidateTracks>;
+
+export function geohashDebugSummary(result: GeohashCandidateResult) {
+  return {
+    candidateTracks: result.candidates.length,
+    fallback: result.fallback,
+    precision: INDEX_PRECISION,
+    queryHashes: result.queryHashCount,
+    tracksAfterBounds: result.trackCount
+  };
 }
 
 function geohashesForBounds(bounds: Bounds) {
   const hashes = new Set<string>();
   const centerLat = (bounds.north + bounds.south) / 2;
-  const latStep = 0.18;
-  const lonStep = Math.max(0.18 / Math.max(0.2, Math.cos((centerLat * Math.PI) / 180)), 0.18);
+  const cellSizeMeters = CELL_SIZE_METERS_BY_PRECISION[INDEX_PRECISION];
+  const latStep = metersToLatitudeDegrees(cellSizeMeters / 2);
+  const lonStep = metersToLongitudeDegrees(cellSizeMeters / 2, centerLat);
 
   for (let lat = bounds.south; lat <= bounds.north; lat += latStep) {
     for (let lon = bounds.west; lon <= bounds.east; lon += lonStep) {
@@ -126,6 +143,14 @@ function sampleSegment(a: TrackPoint, b: TrackPoint) {
   }
 
   return samples;
+}
+
+function metersToLatitudeDegrees(meters: number) {
+  return meters / 111_320;
+}
+
+function metersToLongitudeDegrees(meters: number, latitude: number) {
+  return meters / (111_320 * Math.max(0.2, Math.cos((latitude * Math.PI) / 180)));
 }
 
 function setIntersects(a: Set<string>, b: Set<string>) {

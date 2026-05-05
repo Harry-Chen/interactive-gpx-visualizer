@@ -6,7 +6,7 @@ import SelectionToolbar from "./components/SelectionToolbar";
 import TrackPanel from "./components/TrackPanel";
 import type { SortDirection, TrackSortKey } from "./components/TrackPanel";
 import { boundsIntersect, routeIntersectsBounds } from "./lib/geo";
-import { buildTrackGeohashes, filterCandidateTracks } from "./lib/geohash";
+import { buildTrackGeohashes, filterCandidateTracks, geohashDebugSummary } from "./lib/geohash";
 import { parseFiles } from "./lib/parsers";
 import { simplifyTrackPoints } from "./lib/simplify";
 import { DEFAULT_BASEMAP_ID, type BasemapId } from "./lib/basemaps";
@@ -437,11 +437,34 @@ function applyFilter(tracks: Track[], bounds: Bounds | null) {
     return tracks.map((track) => ({ ...track, matched: true }));
   }
 
-  const candidates = new Set(filterCandidateTracks(tracks.filter((track) => boundsIntersect(track.bounds, bounds)), bounds).map((track) => track.id));
+  const boundedTracks = tracks.filter((track) => boundsIntersect(track.bounds, bounds));
+  const hashStart = performance.now();
+  const candidateResult = filterCandidateTracks(boundedTracks, bounds);
+  const hashDuration = performance.now() - hashStart;
+  const exactStart = performance.now();
+  const exactMatches = new Set(
+    candidateResult.candidates.filter((track) => routeIntersectsBounds(track.points, bounds)).map((track) => track.id)
+  );
+  const exactDuration = performance.now() - exactStart;
+
+  if (import.meta.env.DEV) {
+    console.debug("[range-query] geohash candidates", {
+      ...geohashDebugSummary(candidateResult),
+      bounds,
+      sample: sampleTracks(candidateResult.candidates),
+      totalTracks: tracks.length,
+      durationMs: roundTiming(hashDuration)
+    });
+    console.debug("[range-query] exact matches", {
+      durationMs: roundTiming(exactDuration),
+      exactMatches: exactMatches.size,
+      sample: sampleTracks(candidateResult.candidates.filter((track) => exactMatches.has(track.id)))
+    });
+  }
 
   return tracks.map((track) => ({
     ...track,
-    matched: candidates.has(track.id) && routeIntersectsBounds(track.points, bounds)
+    matched: exactMatches.has(track.id)
   }));
 }
 
@@ -503,4 +526,15 @@ function withoutIds(ids: Set<string>, removeIds: Set<string>) {
     next.delete(id);
   }
   return next;
+}
+
+function sampleTracks(tracks: Track[]) {
+  return tracks.slice(0, 12).map((track) => ({
+    id: track.id,
+    name: track.name
+  }));
+}
+
+function roundTiming(milliseconds: number) {
+  return Number(milliseconds.toFixed(2));
 }
