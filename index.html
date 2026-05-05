@@ -30,6 +30,156 @@
       content="A browser-only GPX/FIT route visualizer with globe maps, metric charts, and geographical range queries."
     />
     <title>GPX / FIT Earth Visualizer</title>
+    <style>
+      html,
+      body,
+      #root {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        overflow: hidden;
+        background: #eef2ef;
+        color: #17211f;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .app-loading {
+        display: grid;
+        width: 100%;
+        height: 100%;
+        min-width: 320px;
+        place-items: center;
+        background: #eef2ef;
+      }
+
+      .app-loading__content {
+        display: grid;
+        gap: 16px;
+        justify-items: center;
+        padding: 24px;
+        text-align: center;
+      }
+
+      .app-loading__mark {
+        position: relative;
+        width: 54px;
+        height: 54px;
+        border: 1px solid rgba(25, 42, 38, 0.16);
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.6);
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.14);
+      }
+
+      .app-loading__mark::before,
+      .app-loading__mark::after {
+        position: absolute;
+        content: "";
+        border-radius: 50%;
+      }
+
+      .app-loading__mark::before {
+        inset: 8px;
+        border: 2px solid rgba(29, 154, 138, 0.2);
+        border-top-color: #1d9a8a;
+        animation: app-loading-spin 900ms linear infinite;
+      }
+
+      .app-loading__mark::after {
+        inset: 22px;
+        background: #1d9a8a;
+        box-shadow: 0 0 0 6px rgba(29, 154, 138, 0.14);
+      }
+
+      .app-loading strong {
+        display: block;
+        font-size: 18px;
+        line-height: 1.2;
+      }
+
+      .app-loading span {
+        display: block;
+        margin-top: 6px;
+        color: #64706c;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .app-loading__mark::before {
+          animation: none;
+        }
+      }
+
+      html[data-theme="dark"] body {
+        background: #0f1513;
+        color: #edf5f1;
+      }
+
+      html[data-theme="dark"] .app-loading {
+        background: #0f1513;
+      }
+
+      html[data-theme="dark"] .app-loading__mark {
+        border-color: rgba(213, 232, 224, 0.16);
+        background: rgba(18, 25, 23, 0.72);
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.38);
+      }
+
+      html[data-theme="dark"] .app-loading__mark::before {
+        border-color: rgba(74, 221, 203, 0.2);
+        border-top-color: #35d0bc;
+      }
+
+      html[data-theme="dark"] .app-loading__mark::after {
+        background: #35d0bc;
+        box-shadow: 0 0 0 6px rgba(74, 221, 203, 0.16);
+      }
+
+      html[data-theme="dark"] .app-loading span {
+        color: #a5b2ad;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        html[data-theme="system"] body {
+          background: #0f1513;
+          color: #edf5f1;
+        }
+
+        html[data-theme="system"] .app-loading {
+          background: #0f1513;
+        }
+
+        html[data-theme="system"] .app-loading__mark {
+          border-color: rgba(213, 232, 224, 0.16);
+          background: rgba(18, 25, 23, 0.72);
+          box-shadow: 0 18px 50px rgba(0, 0, 0, 0.38);
+        }
+
+        html[data-theme="system"] .app-loading__mark::before {
+          border-color: rgba(74, 221, 203, 0.2);
+          border-top-color: #35d0bc;
+        }
+
+        html[data-theme="system"] .app-loading__mark::after {
+          background: #35d0bc;
+          box-shadow: 0 0 0 6px rgba(74, 221, 203, 0.16);
+        }
+
+        html[data-theme="system"] .app-loading span {
+          color: #a5b2ad;
+        }
+      }
+
+      @keyframes app-loading-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
     <script>
       try {
         const theme = window.localStorage.getItem("interactive-gpx-theme");
@@ -40,7 +190,17 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="app-loading" role="status" aria-live="polite">
+        <div class="app-loading__content">
+          <div class="app-loading__mark" aria-hidden="true"></div>
+          <div>
+            <strong>GPX / FIT Visualizer</strong>
+            <span>Loading map and route tools...</span>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
