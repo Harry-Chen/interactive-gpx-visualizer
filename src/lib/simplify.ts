@@ -71,10 +71,25 @@ export function downsampleMetricPoints(points: TrackPoint[], metricKeys: MetricK
     }
   }
 
-  return [...keep]
-    .sort((a, b) => a - b)
-    .slice(0, targetCount * 1.3)
-    .map((pointIndex) => ({ ...points[pointIndex], pointIndex }));
+  return limitSortedIndexes([...keep].sort((a, b) => a - b), Math.floor(targetCount * 1.3)).map((pointIndex) => ({
+    ...points[pointIndex],
+    pointIndex
+  }));
+}
+
+function limitSortedIndexes(indexes: number[], maxCount: number) {
+  if (indexes.length <= maxCount) {
+    return indexes;
+  }
+
+  const limited = new Set<number>();
+  const last = indexes.length - 1;
+
+  for (let index = 0; index < maxCount; index += 1) {
+    limited.add(indexes[Math.round((index * last) / (maxCount - 1))]);
+  }
+
+  return [...limited].sort((a, b) => a - b);
 }
 
 function simplifyRange(points: ProjectedPoint[], first: number, last: number, squaredTolerance: number, keep: Set<number>) {
