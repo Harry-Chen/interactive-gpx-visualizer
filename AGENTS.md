@@ -15,6 +15,7 @@ The project is MIT licensed and the README states that it was written by Codex, 
 - `pnpm build:debug` builds an unminified `dist-debug` output and writes `bundle-analyzer/debug.html`.
 - Cloudflare Pages should build with `pnpm build` and publish `dist`.
 - Vite uses `base: "./"` so production assets are emitted with relative URLs and the built app can be served from any path prefix.
+- Optional deployment metadata comes from `VITE_PUBLIC_SITE_URL` and `VITE_REPOSITORY_URL`. By default these are empty; CI provides them for the public deployment. `VITE_PUBLIC_SITE_URL` also controls whether canonical and Open Graph URL tags are injected into `index.html`.
 - CI lives in `.github/workflows/ci.yml`. It uses pnpm + Node, runs lint plus the release build, uploads the `dist` artifact and `bundle-analyzer/release.html` as a separate analyzer artifact, and deploys pushes to `master` to the Cloudflare Pages project `interactive-gpx-visualizer`.
 
 ## Architecture Notes
@@ -35,6 +36,7 @@ The project is MIT licensed and the README states that it was written by Codex, 
 - Map focus requests use a nonce and are consumed once in `MapView`; keep that behavior so old "focus all" requests do not replay after unrelated track state updates.
 - Focus bounds are calculated from track points using a shortest-longitude-arc helper to avoid jumps near the 0-degree meridian for antimeridian or wide-spanning tracks.
 - Build metadata is injected in `vite.config.ts` as `__APP_VERSION__` from `git describe --tags --always --dirty` and `__BUILD_DATE__` from the build timestamp. The brand bar displays this label so deployed builds are identifiable.
+- Site/repository metadata is injected in `vite.config.ts` as `__PUBLIC_SITE_URL__` and `__REPOSITORY_URL__` from optional Vite environment variables. Keep defaults empty so local/fork builds do not point at the public deployment.
 - Bundle analysis uses `vite-bundle-analyzer` in static mode from `vite.config.ts`. Reports are generated outside deployable app directories under `bundle-analyzer/`.
 
 ## Implementation Guidance

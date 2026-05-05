@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, type HtmlTagDescriptor, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { analyzer } from "vite-bundle-analyzer";
 import { execSync } from "node:child_process";
@@ -6,6 +6,8 @@ import { readFileSync } from "node:fs";
 
 const appVersion = getGitDescribe();
 const buildDate = new Date().toISOString();
+const repositoryUrl = normalizeOptionalValue(process.env.VITE_REPOSITORY_URL);
+const publicSiteUrl = normalizePublicSiteUrl(process.env.VITE_PUBLIC_SITE_URL);
 const dependencyLicenses = buildDependencyLicenses([
   "react",
   "react-dom",
@@ -24,6 +26,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       react(),
+      buildMetadataPlugin(publicSiteUrl),
       analyzer({
         analyzerMode: "static",
         fileName: `../bundle-analyzer/${buildFlavor}`,
@@ -36,6 +39,8 @@ export default defineConfig(({ mode }) => {
     define: {
       __APP_VERSION__: JSON.stringify(appVersion),
       __BUILD_DATE__: JSON.stringify(buildDate),
+      __REPOSITORY_URL__: JSON.stringify(repositoryUrl),
+      __PUBLIC_SITE_URL__: JSON.stringify(publicSiteUrl),
       __DEPENDENCY_LICENSES__: JSON.stringify(dependencyLicenses)
     },
     build: {
@@ -47,6 +52,36 @@ export default defineConfig(({ mode }) => {
   };
 });
 
+function buildMetadataPlugin(siteUrl: string): Plugin {
+  return {
+    name: "app-build-metadata",
+    transformIndexHtml() {
+      if (!siteUrl) {
+        return [];
+      }
+
+      return [
+        {
+          tag: "link",
+          attrs: {
+            rel: "canonical",
+            href: siteUrl
+          },
+          injectTo: "head"
+        },
+        {
+          tag: "meta",
+          attrs: {
+            property: "og:url",
+            content: siteUrl
+          },
+          injectTo: "head"
+        }
+      ] satisfies HtmlTagDescriptor[];
+    }
+  };
+}
+
 function getGitDescribe() {
   try {
     return execSync("git describe --tags --always --dirty", {
@@ -56,6 +91,20 @@ function getGitDescribe() {
   } catch {
     return "unknown";
   }
+}
+
+function normalizeOptionalValue(value: string | undefined) {
+  return value?.trim() ?? "";
+}
+
+function normalizePublicSiteUrl(value: string | undefined) {
+  const url = normalizeOptionalValue(value);
+
+  if (!url) {
+    return "";
+  }
+
+  return url.endsWith("/") ? url : `${url}/`;
 }
 
 function buildDependencyLicenses(packageNames: string[]) {

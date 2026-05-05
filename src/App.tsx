@@ -19,8 +19,6 @@ import type { Bounds, ImportProgress, MapHoverPoint, ParsedTrack, Track } from "
 
 const DEFAULT_COLORS = ["#d94848", "#2c7a7b", "#b45309", "#345995", "#7c3aed", "#0f766e", "#c026d3", "#2563eb"];
 const BUILD_LABEL = `${__APP_VERSION__} · ${formatBuildDate(__BUILD_DATE__)}`;
-const REPOSITORY_URL = "https://github.com/Harry-Chen/interactive-gpx-visualizer";
-const PUBLIC_SITE_URL = "https://gpx.harrychen.xyz";
 
 type FocusRequest = {
   trackId: string;
@@ -385,22 +383,26 @@ export default function App() {
                 <dt>{t(language, "license")}</dt>
                 <dd>MIT</dd>
               </div>
-              <div>
-                <dt>{t(language, "repository")}</dt>
-                <dd>
-                  <a href={REPOSITORY_URL} rel="noreferrer" target="_blank">
-                    {REPOSITORY_URL}
-                  </a>
-                </dd>
-              </div>
-              <div>
-                <dt>{t(language, "publicSite")}</dt>
-                <dd>
-                  <a href={PUBLIC_SITE_URL} rel="noreferrer" target="_blank">
-                    {PUBLIC_SITE_URL}
-                  </a>
-                </dd>
-              </div>
+              {__REPOSITORY_URL__ ? (
+                <div>
+                  <dt>{t(language, "repository")}</dt>
+                  <dd>
+                    <a href={__REPOSITORY_URL__} rel="noreferrer" target="_blank">
+                      {__REPOSITORY_URL__}
+                    </a>
+                  </dd>
+                </div>
+              ) : null}
+              {__PUBLIC_SITE_URL__ ? (
+                <div>
+                  <dt>{t(language, "publicSite")}</dt>
+                  <dd>
+                    <a href={__PUBLIC_SITE_URL__} rel="noreferrer" target="_blank">
+                      {__PUBLIC_SITE_URL__}
+                    </a>
+                  </dd>
+                </div>
+              ) : null}
             </dl>
             <h3>{t(language, "dependencies")}</h3>
             <div className="dependency-table">

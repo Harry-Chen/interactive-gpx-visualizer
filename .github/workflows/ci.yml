@@ -38,6 +38,9 @@ jobs:
 
       - name: Build
         run: pnpm build
+        env:
+          VITE_PUBLIC_SITE_URL: https://gpx.harrychen.xyz
+          VITE_REPOSITORY_URL: https://github.com/Harry-Chen/interactive-gpx-visualizer
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v7

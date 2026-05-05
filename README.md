@@ -32,6 +32,14 @@ pnpm preview
 
 For Cloudflare Pages, use `pnpm build` and publish `dist`. Release and debug builds also generate static bundle analyzer reports in `bundle-analyzer/`.
 
+Optional build metadata can be provided through environment variables:
+
+```bash
+VITE_PUBLIC_SITE_URL=https://example.com VITE_REPOSITORY_URL=https://github.com/example/repo pnpm build
+```
+
+When `VITE_PUBLIC_SITE_URL` is set, the production HTML includes canonical and Open Graph URL tags. When the URL variables are omitted, site-specific metadata and About dialog links are left out.
+
 ## Deployment
 
 The GitHub Actions workflow in `.github/workflows/ci.yml` runs `pnpm lint` and the release build.
