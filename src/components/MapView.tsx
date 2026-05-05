@@ -4,6 +4,7 @@ import type { Bounds, MapHoverPoint, Track, TrackPoint } from "../types";
 import { mapStyle } from "../lib/mapStyle";
 import { BASEMAPS, type BasemapId } from "../lib/basemaps";
 import { trackDate, trackSummary, trackType } from "../lib/trackMetadata";
+import { readMapViewFromUrl, writeMapViewToUrl } from "../lib/mapUrlState";
 
 type FocusRequest = {
   trackId: string;
@@ -53,6 +54,7 @@ export default function MapView({
   const hoverPopupRef = useRef<maplibregl.Popup | null>(null);
   const lastFocusNonceRef = useRef<number | null>(null);
   const trackerPointRef = useRef<MapHoverPoint | null>(null);
+  const urlUpdateTimeoutRef = useRef<number | null>(null);
 
   const trackData = useMemo(() => tracksToGeoJson(tracks, Boolean(filterBounds)), [tracks, filterBounds]);
   const arrowData = useMemo(() => arrowsToGeoJson(tracks, Boolean(filterBounds)), [tracks, filterBounds]);
@@ -134,18 +136,29 @@ export default function MapView({
       return;
     }
 
+    const initialView = readMapViewFromUrl();
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: mapStyle,
-      center: [104, 34],
-      zoom: 1.45,
-      pitch: 0,
-      bearing: 0,
+      center: initialView.center,
+      zoom: initialView.zoom,
+      pitch: initialView.pitch,
+      bearing: initialView.bearing,
       attributionControl: false,
       renderWorldCopies: false,
       boxZoom: false,
       aroundCenter: true
     });
+    const scheduleUrlUpdate = () => {
+      if (urlUpdateTimeoutRef.current !== null) {
+        window.clearTimeout(urlUpdateTimeoutRef.current);
+      }
+
+      urlUpdateTimeoutRef.current = window.setTimeout(() => {
+        urlUpdateTimeoutRef.current = null;
+        writeMapViewToUrl(map);
+      }, 180);
+    };
 
     map.addControl(
       new maplibregl.NavigationControl({
@@ -386,12 +399,24 @@ export default function MapView({
       updateSource(map, TRACKER_SOURCE_ID, hoverPointToGeoJson(trackerPointRef.current));
       setBasemapVisibility(map, basemapIdRef.current);
     });
+    map.on("moveend", scheduleUrlUpdate);
+    map.on("zoomend", scheduleUrlUpdate);
+    map.on("rotateend", scheduleUrlUpdate);
+    map.on("pitchend", scheduleUrlUpdate);
 
     mapRef.current = map;
 
     return () => {
+      if (urlUpdateTimeoutRef.current !== null) {
+        window.clearTimeout(urlUpdateTimeoutRef.current);
+        urlUpdateTimeoutRef.current = null;
+      }
       hoverPopupRef.current?.remove();
       hoverPopupRef.current = null;
+      map.off("moveend", scheduleUrlUpdate);
+      map.off("zoomend", scheduleUrlUpdate);
+      map.off("rotateend", scheduleUrlUpdate);
+      map.off("pitchend", scheduleUrlUpdate);
       map.remove();
       mapRef.current = null;
       loadedRef.current = false;
