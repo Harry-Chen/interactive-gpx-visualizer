@@ -11,9 +11,11 @@ The project is MIT licensed and the README states that it was written by Codex, 
 - Install dependencies with `pnpm install`.
 - Run locally with `pnpm dev`.
 - Validate with `pnpm lint` and `pnpm build`.
+- `pnpm build` aliases `pnpm build:release`, which builds `dist` and writes `bundle-analyzer/release.html`.
+- `pnpm build:debug` builds an unminified `dist-debug` output and writes `bundle-analyzer/debug.html`.
 - Cloudflare Pages should build with `pnpm build` and publish `dist`.
 - Vite uses `base: "./"` so production assets are emitted with relative URLs and the built app can be served from any path prefix.
-- CI lives in `.github/workflows/ci.yml`. It uses pnpm + Node, runs lint/build, uploads the `dist` artifact, and deploys pushes to `master` to the Cloudflare Pages project `interactive-gpx-visualizer`.
+- CI lives in `.github/workflows/ci.yml`. It uses pnpm + Node, runs lint plus the release build, uploads the `dist` artifact and `bundle-analyzer/release.html` as a separate analyzer artifact, and deploys pushes to `master` to the Cloudflare Pages project `interactive-gpx-visualizer`.
 
 ## Architecture Notes
 
@@ -33,6 +35,7 @@ The project is MIT licensed and the README states that it was written by Codex, 
 - Map focus requests use a nonce and are consumed once in `MapView`; keep that behavior so old "focus all" requests do not replay after unrelated track state updates.
 - Focus bounds are calculated from track points using a shortest-longitude-arc helper to avoid jumps near the 0-degree meridian for antimeridian or wide-spanning tracks.
 - Build metadata is injected in `vite.config.ts` as `__APP_VERSION__` from `git describe --tags --always --dirty` and `__BUILD_DATE__` from the build timestamp. The brand bar displays this label so deployed builds are identifiable.
+- Bundle analysis uses `vite-bundle-analyzer` in static mode from `vite.config.ts`. Reports are generated outside deployable app directories under `bundle-analyzer/`.
 
 ## Implementation Guidance
 
@@ -41,4 +44,4 @@ The project is MIT licensed and the README states that it was written by Codex, 
 - Use existing model helpers before adding duplicate parsing, stats, or geometry logic.
 - Keep UI dense and tool-like; this is an application, not a marketing landing page.
 - Rust/WASM is intentionally deferred. Introduce it only after profiling shows parsing or spatial filtering is a real bottleneck with large route collections.
-- Do not commit `node_modules`, `dist`, local environment files, or Cloudflare generated state.
+- Do not commit `node_modules`, `dist`, `dist-debug`, `bundle-analyzer`, local environment files, or Cloudflare generated state.

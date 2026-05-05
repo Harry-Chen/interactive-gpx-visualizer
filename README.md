@@ -25,16 +25,18 @@ The project is inspired by [GPX Studio](https://github.com/gpxstudio/gpxstudio.g
 pnpm install
 pnpm dev
 pnpm build
+pnpm build:release
+pnpm build:debug
 pnpm preview
 ```
 
-For Cloudflare Pages, use `pnpm build` and publish `dist`.
+For Cloudflare Pages, use `pnpm build` and publish `dist`. Release and debug builds also generate static bundle analyzer reports in `bundle-analyzer/`.
 
 ## Deployment
 
-The GitHub Actions workflow in `.github/workflows/ci.yml` runs `pnpm lint` and `pnpm build`.
+The GitHub Actions workflow in `.github/workflows/ci.yml` runs `pnpm lint` and the release build.
 Pushes to `master` deploy the built `dist` directory to the Cloudflare Pages project `interactive-gpx-visualizer`.
-Pull requests run validation without deploying.
+Pull requests run validation without deploying. CI uploads `dist` and the release bundle analyzer report as separate artifacts.
 
 ## Notes
 

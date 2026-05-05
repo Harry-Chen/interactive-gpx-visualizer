@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { analyzer } from "vite-bundle-analyzer";
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
@@ -17,17 +18,33 @@ const dependencyLicenses = buildDependencyLicenses([
   "lucide-react"
 ]);
 
-export default defineConfig({
-  plugins: [react()],
-  base: "./",
-  define: {
-    __APP_VERSION__: JSON.stringify(appVersion),
-    __BUILD_DATE__: JSON.stringify(buildDate),
-    __DEPENDENCY_LICENSES__: JSON.stringify(dependencyLicenses)
-  },
-  build: {
-    target: "es2022"
-  }
+export default defineConfig(({ mode }) => {
+  const buildFlavor = mode === "debug" ? "debug" : "release";
+
+  return {
+    plugins: [
+      react(),
+      analyzer({
+        analyzerMode: "static",
+        fileName: `../bundle-analyzer/${buildFlavor}`,
+        reportTitle: `Interactive GPX Visualizer Bundle (${buildFlavor})`,
+        openAnalyzer: false,
+        defaultSizes: "gzip"
+      })
+    ],
+    base: "./",
+    define: {
+      __APP_VERSION__: JSON.stringify(appVersion),
+      __BUILD_DATE__: JSON.stringify(buildDate),
+      __DEPENDENCY_LICENSES__: JSON.stringify(dependencyLicenses)
+    },
+    build: {
+      target: "es2022",
+      outDir: buildFlavor === "debug" ? "dist-debug" : "dist",
+      minify: buildFlavor === "debug" ? false : "esbuild",
+      sourcemap: buildFlavor === "debug"
+    }
+  };
 });
 
 function getGitDescribe() {
