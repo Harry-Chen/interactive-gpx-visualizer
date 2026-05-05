@@ -1,5 +1,5 @@
-import type { MetricKey } from "../types";
-import type { BasemapId } from "./basemaps";
+import type { MetricKey } from "../../types";
+import type { BasemapId } from "../map/basemaps";
 
 export type Language = "zh" | "en";
 

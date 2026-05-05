@@ -1,4 +1,4 @@
-import type { MetricKey, TrackPoint } from "../types";
+import type { MetricKey, TrackPoint } from "../../types";
 
 type ProjectedPoint = {
   index: number;

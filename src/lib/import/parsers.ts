@@ -1,9 +1,9 @@
 import { XMLParser } from "fast-xml-parser";
-import type { FileKind, ImportProgress, ParsedTrack, TrackPoint, UploadResult } from "../types";
-import type { Language } from "./i18n";
-import { t } from "./i18n";
-import { calculateBounds } from "./geo";
-import { calculateTrackStats, enrichPoints } from "./stats";
+import type { FileKind, ImportProgress, ParsedTrack, TrackPoint, UploadResult } from "../../types";
+import type { Language } from "../ui/i18n";
+import { t } from "../ui/i18n";
+import { calculateBounds } from "../geo/geometry";
+import { calculateTrackStats, enrichPoints } from "../tracks/stats";
 
 type GpxDocument = {
   gpx?: {

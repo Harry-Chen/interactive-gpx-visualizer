@@ -1,9 +1,9 @@
 import { Filter, LocateFixed, SquareDashedMousePointer, X } from "lucide-react";
 import type { Bounds } from "../types";
-import { BASEMAPS, type BasemapId } from "../lib/basemaps";
-import type { Language } from "../lib/i18n";
-import { basemapName, t } from "../lib/i18n";
-import type { ThemeMode } from "../lib/theme";
+import { BASEMAPS, type BasemapId } from "../lib/map/basemaps";
+import type { Language } from "../lib/ui/i18n";
+import { basemapName, t } from "../lib/ui/i18n";
+import type { ThemeMode } from "../lib/ui/theme";
 
 type SelectionToolbarProps = {
   selectionMode: boolean;

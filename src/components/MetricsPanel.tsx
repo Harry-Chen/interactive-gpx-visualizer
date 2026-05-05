@@ -1,10 +1,10 @@
 import { lazy, Suspense, useRef } from "react";
 import type { MapHoverPoint, MetricKey, Track } from "../types";
-import { formatDistance, formatDuration, formatNumber, formatSpeed } from "../lib/format";
-import { numbers } from "../lib/stats";
-import type { Language } from "../lib/i18n";
-import { metricLabelsByLanguage, t } from "../lib/i18n";
-import { trackDate, trackType } from "../lib/trackMetadata";
+import { formatDistance, formatDuration, formatNumber, formatSpeed } from "../lib/ui/format";
+import { numbers } from "../lib/tracks/stats";
+import type { Language } from "../lib/ui/i18n";
+import { metricLabelsByLanguage, t } from "../lib/ui/i18n";
+import { trackDate, trackType } from "../lib/tracks/metadata";
 
 type MetricsPanelProps = {
   track?: Track;

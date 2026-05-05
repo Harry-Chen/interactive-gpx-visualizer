@@ -1,5 +1,5 @@
-import type { TrackPoint, TrackStats } from "../types";
-import { haversineDistance } from "./geo";
+import type { TrackPoint, TrackStats } from "../../types";
+import { haversineDistance } from "../geo/geometry";
 
 const MOVING_SPEED_THRESHOLD = 0.6;
 

@@ -9,8 +9,8 @@ import {
   YAxis
 } from "recharts";
 import type { MapHoverPoint, MetricKey, Track, TrackPoint } from "../types";
-import { downsampleMetricPoints } from "../lib/simplify";
-import { formatDistance, formatDuration } from "../lib/format";
+import { downsampleMetricPoints } from "../lib/tracks/simplify";
+import { formatDistance, formatDuration } from "../lib/ui/format";
 import type { MetricLabelMap } from "./MetricsPanel";
 
 type MetricsChartsProps = {

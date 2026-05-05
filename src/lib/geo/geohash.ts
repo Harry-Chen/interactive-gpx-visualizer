@@ -1,5 +1,5 @@
-import type { Bounds, Track, TrackPoint } from "../types";
-import { haversineDistance } from "./geo";
+import type { Bounds, Track, TrackPoint } from "../../types";
+import { haversineDistance } from "./geometry";
 
 const BASE32 = "0123456789bcdefghjkmnpqrstuvwxyz";
 export const INDEX_PRECISION = 5;

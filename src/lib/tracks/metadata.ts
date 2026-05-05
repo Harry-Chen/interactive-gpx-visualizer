@@ -1,5 +1,5 @@
-import type { Track } from "../types";
-import { formatDateTime, formatDistance, formatDuration } from "./format";
+import type { Track } from "../../types";
+import { formatDateTime, formatDistance, formatDuration } from "../ui/format";
 
 export function trackType(track: Pick<Track, "kind">) {
   return track.kind.toUpperCase();

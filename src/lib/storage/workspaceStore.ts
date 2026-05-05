@@ -1,4 +1,4 @@
-import type { Track, TrackPoint, TrackStats } from "../types";
+import type { Track, TrackPoint, TrackStats } from "../../types";
 
 const DATABASE_NAME = "interactive-gpx-workspace";
 const DATABASE_VERSION = 1;

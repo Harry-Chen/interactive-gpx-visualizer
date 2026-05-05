@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import maplibregl, { type GeoJSONSource, type LngLatBoundsLike, type Map } from "maplibre-gl";
 import type { Bounds, MapHoverPoint, Track, TrackPoint } from "../types";
-import { mapStyle } from "../lib/mapStyle";
-import { BASEMAPS, type BasemapId } from "../lib/basemaps";
-import { trackDate, trackSummary, trackType } from "../lib/trackMetadata";
-import { readMapViewFromUrl, writeMapViewToUrl } from "../lib/mapUrlState";
+import { mapStyle } from "../lib/map/style";
+import { BASEMAPS, type BasemapId } from "../lib/map/basemaps";
+import { trackDate, trackSummary, trackType } from "../lib/tracks/metadata";
+import { readMapViewFromUrl, writeMapViewToUrl } from "../lib/map/urlState";
 
 type FocusRequest = {
   trackId: string;

@@ -1,4 +1,4 @@
-import type { Bounds, TrackPoint } from "../types";
+import type { Bounds, TrackPoint } from "../../types";
 
 const EARTH_RADIUS_METERS = 6371008.8;
 

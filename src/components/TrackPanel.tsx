@@ -1,9 +1,9 @@
 import { Eye, EyeOff, Focus, Palette, Trash2, Upload } from "lucide-react";
 import type { ChangeEvent } from "react";
 import type { ImportProgress, Track } from "../types";
-import type { Language } from "../lib/i18n";
-import { t } from "../lib/i18n";
-import { trackDate, trackSummary } from "../lib/trackMetadata";
+import type { Language } from "../lib/ui/i18n";
+import { t } from "../lib/ui/i18n";
+import { trackDate, trackSummary } from "../lib/tracks/metadata";
 
 export type TrackSortKey = "name" | "date" | "distance" | "movingTime";
 export type SortDirection = "asc" | "desc";
